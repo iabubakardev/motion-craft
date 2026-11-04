@@ -99,7 +99,7 @@ The main-process registry survives renderer reloads and ends when Electron exits
 
 `components/ui/panel-resize-handle.tsx` uses pointer capture and accessible keyboard separators. `features/editor/layout.cjs` validates saved pixel dimensions and constrains them against viewport bounds, preserving a 320px monitor and 240px upper workspace at desktop sizes. Only versioned panel dimensions are saved in localStorage. Assets, paths, project settings, selection and playback are not persisted there. Smaller browser widths use a stacked layout without resize handles.
 
-`features/timeline/` displays real project scenes/tracks/clips, with zoom, scrolling and an independently positioned marker. Scene-layer clips are derived from the canonical scene/layer model; standalone asset clips imported in JSON own their global timing. There is no timeline drag-and-drop, trimming or composition playback. See [Workspace behavior](EDITOR_WORKSPACE.md).
+`core/timeline/` owns frame conversion, strict typed commands, edit previews, compatibility/source/overlap/lock validation and snapping. `features/timeline/` owns a per-workspace Zustand interaction store, focused subscriptions, pointer gestures and visible horizontal ranges. `useProjectDocument.executeTimeline` validates and commits one completed command into the existing bounded snapshot history. Transient previews never enter project JSON. Scene layers remain canonical and derived clips are rebuilt atomically; standalone asset clips own global timing. Source playback remains independent. See [Timeline architecture and limitations](TIMELINE.md).
 
 ## Project document and persistence
 

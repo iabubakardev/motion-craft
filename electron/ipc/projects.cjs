@@ -85,6 +85,7 @@ function registerProjectIPC(library) {
       project: result.project,
       filename: path.basename(selection.filePaths[0]),
       candidateId,
+      ...(result.migratedFrom ? { migratedFrom: result.migratedFrom } : {}),
     });
   });
   handle(

@@ -17,7 +17,7 @@ MotionCraft aims to combine hands-on timeline editing with optional AI-assisted 
 
 ## Current status
 
-MotionCraft now has a versioned project model, scene/layer editing, JSON import/export, native local save/open, missing-media relinking and undo/redo, integrated with the resizable workspace and original-source preview. Composition playback, timeline drag-and-drop/trimming, AI and video rendering remain future work.
+MotionCraft now has a versioned project model, scene/layer editing, JSON import/export, native local save/open, missing-media relinking and undo/redo, integrated with the resizable workspace and original-source preview. The Phase 4 timeline adds media placement, move/trim/split, multi-selection, snapping, track controls and persistent undoable edits. Composition playback, AI and video rendering remain future work.
 
 See [Roadmap](docs/ROADMAP.md) for checked milestones.
 
@@ -71,7 +71,7 @@ The media integration suite also verifies workspace tabs and inspector, keyboard
 
 ## Engineering workflow
 
-Read [Engineering standards](docs/ENGINEERING_STANDARDS.md) for every change; [Engineering audit](docs/ENGINEERING_AUDIT.md) records prioritized follow-up work. Phase 3 remains the current hardening milestone. Phase 4 is not started.
+Read [Engineering standards](docs/ENGINEERING_STANDARDS.md) for every change; [Engineering audit](docs/ENGINEERING_AUDIT.md) records prioritized follow-up work. Phase 4 timeline editing is implemented as a working vertical slice. See [Timeline editing](docs/TIMELINE.md) for commands, shortcuts, migration and limits.
 
 ```bash
 npm run check
@@ -104,7 +104,7 @@ Imports reference originals without copying them. Duplicate paths retain asset I
 
 ## Saving and importing projects
 
-Use Save project / Save as to write `.motioncraft.json` through Electron native dialogs. Open project validates a file and shows a summary before replacement. Import JSON accepts pasted or uploaded schema v1 JSON and also requires replacement confirmation; Export JSON downloads the validated, path-free document. Ctrl+S saves and Ctrl+Z / Ctrl+Shift+Z undo/redo outside text inputs. Ctrl+O continues to import media.
+Use Save project / Save as to write `.motioncraft.json` through Electron native dialogs. Open project validates a file and shows a summary before replacement. Import JSON accepts pasted or uploaded schema v1/v2 JSON (v1 is validated and migrated for review) and also requires replacement confirmation; Export JSON downloads the validated, path-free document. Ctrl+S saves and Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y undo/redo outside text inputs. Ctrl+O continues to import media.
 
 Unsaved edits are tracked. New/open/import replacement explicitly warns before discarding them; closing or reloading a dirty desktop document asks whether to keep editing or discard. There is no autosave or crash recovery. Always save before exiting. A reload starts a new unsaved document and clears the previous save target.
 
@@ -125,3 +125,7 @@ The project is in an early architecture phase. Before contributing, read [AGENTS
 ## License
 
 A license has not yet been selected. Until a license is added, do not assume the repository grants open-source reuse rights.
+
+Run `npm run test:timeline` against the dev server for media-to-track placement, real pointer move/trim, one-commit history, split, copy/paste/delete, track flags and native save/new/reopen. Pickers are stubbed; placement uses DOM drag events; clip gestures use Electron mouse input. The screenshot is `.next/timeline-workspace-smoke.png`.
+
+Zustand 5.0.16 is the only Phase 4 dependency: a per-workspace vanilla store keeps high-frequency drag/selection/playhead state outside project snapshots. Native drag-and-drop and pointer events avoid another drag library. `npm run build` verifies the Next.js production bundle; Electron packaging/loading remains unconfigured.

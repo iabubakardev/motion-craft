@@ -1,35 +1,544 @@
-﻿import type { Project } from "@/core/project/types";
-import { EditorIcon } from "@/features/editor/editor-icon";
-import { TimelineRuler } from "./timeline-ruler";
-import { TrackHeader } from "./track-header";
-
-export function TimelinePanel({ project, activeSceneId, selectedLayerId, onScene, onLayer, onAsset, zoom, playhead, onZoom, onSeek }: {
-  project: Project; activeSceneId: string | null; selectedLayerId: string | null;
-  onScene: (id: string) => void; onLayer: (sceneId: string, layerId: string) => void; onAsset: (id: string) => void;
-  zoom: number; playhead: number; onZoom: (zoom: number) => void; onSeek: (time: number) => void;
-}) {
-  const extent = Math.max(120, Math.ceil(project.duration / 10) * 10);
-  return <section id="timeline-panel" aria-label="Timeline workspace" className="editor-panel flex h-full min-h-0 flex-col">
-    <div className="flex h-9 shrink-0 items-center gap-3 border-b border-[var(--editor-border)] px-3">
-      <h2 className="text-[11px] font-medium">Timeline</h2><span className="text-[10px] text-[var(--editor-muted)]">{project.scenes.length ? `${project.scenes.length} scenes · ${project.duration.toFixed(1)} s` : 'No scenes'} · data view</span>
-      <button type="button" className="editor-icon-button" aria-label="Reset timeline playhead" title="Reset timeline marker" onClick={() => onSeek(0)}><EditorIcon name="reset" className="h-3 w-3" /></button>
-      <output aria-label="Timeline marker time" className="font-mono text-[10px] text-[var(--editor-accent)]">{playhead.toFixed(1)} s</output>
-      <div className="ml-auto flex items-center gap-2"><button type="button" aria-label="Zoom timeline out" className="editor-icon-button" disabled={zoom <= 4} onClick={() => onZoom(zoom - 4)}>−</button><label className="flex items-center gap-2 text-[10px] text-[var(--editor-muted)]"><span>Zoom</span><input aria-label="Timeline zoom" type="range" min={4} max={80} step={1} value={zoom} onChange={(event) => onZoom(Number(event.target.value))} className="editor-range w-20" /></label><button type="button" aria-label="Zoom timeline in" className="editor-icon-button" disabled={zoom >= 80} onClick={() => onZoom(zoom + 4)}>+</button><output className="w-9 text-right font-mono text-[9px] text-[var(--editor-muted)]">{Math.round(zoom / 12 * 100)}%</output></div>
-    </div>
-    <div className="timeline-scroll min-h-0 flex-1 overflow-auto" aria-label="Scrollable timeline"><div className="relative min-h-full" style={{ width: 116 + extent * zoom }}>
-      <div className="sticky top-0 z-20 flex h-6 bg-[var(--editor-panel)]"><div className="sticky left-0 z-30 flex w-[116px] shrink-0 items-center border-r border-[var(--editor-border)] bg-[var(--editor-panel)] px-3 text-[9px] text-[var(--editor-muted)]">TRACKS</div><TimelineRuler zoom={zoom} duration={extent} playhead={Math.min(playhead, extent)} onSeek={onSeek} /></div>
-      <div className="flex h-7 border-b border-[var(--editor-border)]"><div className="timeline-track-header">Scenes</div><div className="relative flex-1">{project.scenes.map((scene) => <button key={scene.id} type="button" aria-label={`Timeline scene ${scene.name}`} aria-pressed={activeSceneId === scene.id} title={`${scene.name}: ${scene.start.toFixed(2)}–${(scene.start + scene.duration).toFixed(2)} s`} className={`absolute top-1 h-5 truncate rounded-sm border px-1 text-left text-[9px] ${activeSceneId === scene.id ? 'border-[var(--editor-accent)] bg-[#23505b]' : 'border-slate-600 bg-[var(--editor-elevated)]'}`} style={{ left: scene.start * zoom, width: Math.max(3, scene.duration * zoom - 2) }} onClick={() => { onScene(scene.id); onSeek(scene.start); }}>{scene.name}</button>)}</div></div>
-      {[...project.tracks].sort((a, b) => a.order - b.order).map((track) => <div key={track.id} className="flex h-7 border-b border-[var(--editor-border)]"><TrackHeader id={track.name} type={track.type} /><div className="timeline-track relative flex-1" style={{ backgroundSize: `${zoom * 10}px 100%` }}>
-        {track.clips.map((clip) => {
-          const scene = clip.layerId ? project.scenes.find((item) => item.layers.some((layer) => layer.id === clip.layerId)) : null;
-          const layer = scene?.layers.find((item) => item.id === clip.layerId);
-          const asset = project.assets.find((item) => item.id === (clip.assetId || (layer && 'assetId' in layer ? layer.assetId : null)));
-          const label = asset?.filename || (layer && 'text' in layer.properties ? layer.properties.text : layer?.type || 'Asset clip');
-          return <button key={clip.id} type="button" aria-label={`Timeline layer ${label}`} aria-pressed={!!clip.layerId && clip.layerId === selectedLayerId} title={`${label}: ${clip.start.toFixed(2)} s + ${clip.duration.toFixed(2)} s`} className={`absolute top-1 h-5 truncate rounded-sm border px-1 text-left text-[9px] ${clip.layerId === selectedLayerId ? 'border-[var(--editor-accent)] bg-[#23505b]' : track.type === 'audio' ? 'border-[#466655] bg-[#243d33]' : 'border-[#44596f] bg-[#26384c]'}`} style={{ left: clip.start * zoom, width: Math.max(3, clip.duration * zoom - 2) }} onClick={() => { if (scene && clip.layerId) onLayer(scene.id, clip.layerId); else if (clip.assetId) onAsset(clip.assetId); onSeek(clip.start); }}>{label}</button>;
-        })}
-      </div></div>)}
-      <div aria-hidden="true" className="pointer-events-none absolute bottom-0 top-6 z-10 w-px bg-[var(--editor-accent)]" style={{ left: 116 + Math.min(playhead, extent) * zoom }} />
-      {!project.scenes.length && !project.tracks.some((track) => track.clips.length) && <p className="pointer-events-none absolute left-[140px] top-[80px] max-w-72 text-[10px] leading-5 text-[var(--editor-muted)]">No project content yet.<br /><span className="opacity-60">Add a scene, then add source or text layers. Timeline drag-and-drop and rendering are not available.</span></p>}
-    </div></div>
-  </section>;
+"use client";
+import { memo, useEffect, useMemo, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
+import type { DragEvent } from "react";
+import type { MediaAsset } from "@/core/media/types";
+import type { Project } from "@/core/project/types";
+import type { TimelineCommand } from "@/core/timeline/types";
+import { copyClips, createTimelineIndex, planTimelineEdit } from "@/core/timeline/commands.cjs";
+import { pixelsToFrames, secondsToFrames } from "@/core/timeline/time.cjs";
+import { snapEdges, snapTargets } from "@/core/timeline/snapping.cjs";
+import {
+  ClipBlock,
+  TrackGhost,
+  Playhead,
+  FrameRuler,
+  SnapButton,
+  TimelineMessage,
+  TimelineReadout,
+} from "./timeline-controls";
+import { useTimeline, useTimelineStoreApi } from "./timeline-store";
+import { useClipGesture } from "./use-clip-gesture";
+interface Props {
+  assets: MediaAsset[];
+  project: Project;
+  activeSceneId: string | null;
+  documentGeneration: number;
+  busy: boolean;
+  execute: (command: TimelineCommand, expected?: Project) => boolean;
+  onScene: (id: string) => void;
+  onLayer: (sceneId: string, layerId: string) => void;
+  onAsset: (id: string) => void;
 }
+const HEADER = 196;
+const TRACK_ROLES: Record<string, string> = {
+  V1: "Main video",
+  V2: "Overlay",
+  V3: "Graphics",
+  V4: "Captions",
+  A1: "Narration",
+  A2: "Music",
+  A3: "SFX",
+};
+export const TimelinePanel = memo(function TimelinePanel({
+  assets,
+  project,
+  activeSceneId,
+  documentGeneration,
+  busy,
+  execute,
+  onScene,
+  onLayer,
+  onAsset,
+}: Props) {
+  const store = useTimelineStoreApi(),
+    viewport = useRef<HTMLDivElement>(null);
+  const { zoom, scrollLeft, viewportWidth } = useTimeline(
+    useShallow((s) => ({ zoom: s.zoom, scrollLeft: s.scrollLeft, viewportWidth: s.viewportWidth })),
+  );
+  const activeTrackId = useTimeline((s) => s.activeTrackId);
+  const index = useMemo(() => createTimelineIndex(project), [project]);
+  const thumbnails = useMemo(
+    () =>
+      new Map(
+        assets.map((asset) => [
+          asset.id,
+          asset.status !== "error"
+            ? asset.thumbnailUrl || (asset.type === "image" ? asset.url : undefined)
+            : undefined,
+        ]),
+      ),
+    [assets],
+  );
+  const tracks = useMemo(
+    () => [...project.tracks].sort((a, b) => a.order - b.order),
+    [project.tracks],
+  );
+  const gesture = useClipGesture(project, execute, viewport, busy);
+  const extent = Math.min(
+    86400,
+    Math.max(
+      project.duration + 80 / zoom,
+      (viewportWidth - HEADER) / zoom,
+      project.duration ? 0 : 120,
+    ),
+  );
+  const maxZoom = Math.max(0.01, Math.min(600, 16000000 / Math.max(1, project.duration)));
+  useEffect(() => {
+    store.getState().reset();
+  }, [project.id, documentGeneration, store]);
+  useEffect(() => {
+    const state = store.getState();
+    const ids = state.selectedIds.filter((id) => index.clips.has(id));
+    if (ids.length !== state.selectedIds.length) state.setSelection(ids);
+    state.cancelDrag();
+  }, [index, store]);
+  useEffect(() => {
+    const element = viewport.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() =>
+      store
+        .getState()
+        .setView({ viewportWidth: element.clientWidth, viewportHeight: element.clientHeight }),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [store]);
+  const run = (command: TimelineCommand) => {
+    if (busy) return false;
+    const ok = execute(command, project);
+    if (ok) store.getState().setMessage("");
+    return ok;
+  };
+  const action = (name: "delete" | "duplicate" | "copy" | "paste" | "split") => {
+    const state = store.getState(),
+      ids = state.selectedIds.filter((id) => index.clips.has(id));
+    if (name === "copy") {
+      state.setClipboard(copyClips(project, ids, index));
+      state.setMessage(`Copied ${ids.length} clips`);
+      return;
+    }
+    if (name === "paste") {
+      if (state.clipboard.length) {
+        const newIds = state.clipboard.map(() => crypto.randomUUID());
+        if (run({ type: "PasteClips", items: state.clipboard, newIds, frame: state.playheadFrame }))
+          state.setSelection(newIds);
+      }
+      return;
+    }
+    if (!ids.length) return;
+    if (name === "delete") {
+      if (run({ type: "DeleteClips", clipIds: ids })) state.setSelection([]);
+    }
+    if (name === "duplicate") {
+      const newIds = ids.map(() => crypto.randomUUID());
+      if (run({ type: "DuplicateClip", clipIds: ids, newIds })) state.setSelection(newIds);
+    }
+    if (name === "split") {
+      if (ids.length !== 1) {
+        state.setMessage("Select one clip to split.");
+        return;
+      }
+      const newClipId = crypto.randomUUID();
+      if (run({ type: "SplitClip", clipId: ids[0], newClipId, frame: state.playheadFrame }))
+        state.setSelection([ids[0], newClipId]);
+    }
+  };
+  const dropCommand = (event: DragEvent, trackId: string): TimelineCommand | null => {
+    const state = store.getState(),
+      assetId = state.dragAssetId || event.dataTransfer.getData("application/x-motioncraft-asset");
+    const view = viewport.current;
+    if (!assetId || !view) return null;
+    let frame = Math.max(
+      0,
+      pixelsToFrames(
+        event.clientX - view.getBoundingClientRect().left + view.scrollLeft - HEADER,
+        zoom,
+        project.fps,
+      ),
+    );
+    if (state.snapEnabled)
+      frame += snapEdges(
+        [frame],
+        snapTargets(project, state.playheadFrame),
+        (8 * project.fps) / zoom,
+      ).delta;
+    return {
+      type: "InsertClip",
+      clipId: "00000000-0000-4000-8000-000000000001",
+      assetId,
+      trackId,
+      startFrame: frame,
+    };
+  };
+  return (
+    <section
+      id="timeline-panel"
+      aria-label="Timeline workspace"
+      className="editor-panel flex h-full min-h-0 flex-col"
+      tabIndex={-1}
+      onKeyDown={(event) => {
+        if (
+          busy ||
+          event.defaultPrevented ||
+          event.nativeEvent.isComposing ||
+          (event.target instanceof Element &&
+            event.target.closest("input,textarea,select,[contenteditable='true'],[role='slider']"))
+        )
+          return;
+        const key = event.key.toLowerCase(),
+          ctrl = event.ctrlKey || event.metaKey;
+        if (key === "escape" && document.fullscreenElement) return;
+        if (key === "escape") {
+          event.preventDefault();
+          store.getState().cancelDrag();
+          store.getState().setSelection([]);
+        } else if (key === "delete" || key === "backspace") {
+          event.preventDefault();
+          action("delete");
+        } else if (ctrl && ["c", "v", "d"].includes(key)) {
+          event.preventDefault();
+          action(key === "c" ? "copy" : key === "v" ? "paste" : "duplicate");
+        } else if (!ctrl && key === "s") {
+          event.preventDefault();
+          action("split");
+        } else if (!ctrl && ["arrowleft", "arrowright"].includes(key)) {
+          event.preventDefault();
+          store
+            .getState()
+            .setPlayhead(
+              Math.min(
+                86400 * project.fps,
+                Math.max(
+                  0,
+                  store.getState().playheadFrame +
+                    (key === "arrowright" ? 1 : -1) * (event.shiftKey ? project.fps : 1),
+                ),
+              ),
+            );
+        } else if (["+", "=", "-"].includes(key)) {
+          event.preventDefault();
+          store.getState().setZoom(Math.min(maxZoom, zoom * (key === "-" ? 0.8 : 1.25)));
+        }
+      }}
+    >
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--editor-border)] px-2 py-1 text-[10px]">
+        <h2>Timeline</h2>
+        <TimelineReadout fps={project.fps} />
+        {(["split", "delete", "duplicate", "copy", "paste"] as const).map((name) => (
+          <button
+            key={name}
+            type="button"
+            disabled={busy}
+            className="editor-secondary !px-2 !py-1 capitalize"
+            aria-label={`${name} timeline clips`}
+            onClick={() => action(name)}
+          >
+            {name}
+          </button>
+        ))}
+        <SnapButton />
+        <button
+          type="button"
+          className="editor-secondary !px-2 !py-1"
+          onClick={() => store.getState().setPlayhead(0)}
+          aria-label="Reset timeline playhead"
+        >
+          Start
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button aria-label="Zoom timeline out" onClick={() => store.getState().setZoom(zoom - 4)}>
+            -
+          </button>
+          <input
+            aria-label="Timeline zoom"
+            type="range"
+            min={0.01}
+            max={maxZoom}
+            step={0.01}
+            value={Math.min(zoom, maxZoom)}
+            onChange={(e) => store.getState().setZoom(Number(e.target.value))}
+            className="w-20"
+          />
+          <button
+            aria-label="Zoom timeline in"
+            onClick={() => store.getState().setZoom(Math.min(maxZoom, zoom + 4))}
+          >
+            +
+          </button>
+          <button
+            className="editor-secondary !px-2 !py-1"
+            onClick={() =>
+              store
+                .getState()
+                .setZoom(
+                  Math.max(
+                    0.01,
+                    Math.min(
+                      maxZoom,
+                      (viewportWidth - HEADER - 32) / Math.max(1, project.duration),
+                    ),
+                  ),
+                )
+            }
+          >
+            Fit project
+          </button>
+        </div>
+      </div>
+      <TimelineMessage />
+      <div
+        ref={viewport}
+        className="timeline-scroll min-h-0 flex-1 overflow-auto"
+        aria-label="Scrollable timeline"
+        onScroll={(e) =>
+          store.getState().setView({
+            scrollLeft: e.currentTarget.scrollLeft,
+            scrollTop: e.currentTarget.scrollTop,
+          })
+        }
+      >
+        <div className="relative min-h-full" style={{ width: HEADER + extent * zoom }}>
+          <div className="sticky top-0 z-20 flex h-6 bg-[var(--editor-panel)]">
+            <div
+              className="sticky left-0 z-30 shrink-0 border-r border-[var(--editor-border)] bg-[var(--editor-panel)] px-2 text-[9px]"
+              style={{ width: HEADER }}
+            >
+              TRACKS · source preview only
+            </div>
+            <FrameRuler zoom={zoom} extent={extent} fps={project.fps} />
+          </div>
+          <div className="flex h-7 border-b border-[var(--editor-border)]">
+            <div
+              className="sticky left-0 z-10 shrink-0 bg-[var(--editor-panel)] px-2 text-[10px]"
+              style={{ width: HEADER }}
+            >
+              Scenes
+            </div>
+            <div className="relative flex-1">
+              {project.scenes
+                .filter(
+                  (scene) =>
+                    (scene.start + scene.duration) * zoom >= scrollLeft - HEADER &&
+                    scene.start * zoom < scrollLeft + viewportWidth,
+                )
+                .map((scene) => (
+                  <button
+                    key={scene.id}
+                    className="absolute top-1 h-5 truncate rounded border border-slate-600 bg-slate-800 px-1 text-[9px]"
+                    aria-label={`Timeline scene ${scene.name}`}
+                    aria-pressed={scene.id === activeSceneId}
+                    style={{
+                      left: scene.start * zoom,
+                      width: Math.max(3, scene.duration * zoom - 2),
+                    }}
+                    onClick={() => {
+                      onScene(scene.id);
+                      store.getState().setSelection([]);
+                      store.getState().setPlayhead(secondsToFrames(scene.start, project.fps));
+                    }}
+                  >
+                    {scene.name}
+                  </button>
+                ))}
+            </div>
+          </div>
+          {!index.clips.size && (
+            <p className="pointer-events-none absolute left-[216px] top-16 z-10 max-w-72 text-[10px] text-slate-400">
+              Drag imported media onto a compatible track. Select clips to move, trim, split or edit
+              timing. Audio needs an audio track.
+            </p>
+          )}
+          {tracks.map((track) => (
+            <div
+              key={track.id}
+              data-track-id={track.id}
+              className="flex border-b border-[var(--editor-border)]"
+              style={{ height: track.height }}
+              onDragOver={(event) => {
+                const command = dropCommand(event, track.id);
+                if (!command || busy) return;
+                event.preventDefault();
+                try {
+                  const plan = planTimelineEdit(project, command, index);
+                  store.getState().setDrag({
+                    changes: plan.changes,
+                    guide: null,
+                    valid: true,
+                    error: "",
+                    trackId: track.id,
+                  });
+                  event.dataTransfer.dropEffect = "copy";
+                } catch (error) {
+                  store.getState().setDrag({
+                    changes: [],
+                    guide: null,
+                    valid: false,
+                    error: error instanceof Error ? error.message : "Invalid drop",
+                    trackId: track.id,
+                  });
+                  event.dataTransfer.dropEffect = "none";
+                }
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const command = dropCommand(event, track.id);
+                store.getState().cancelDrag();
+                if (command?.type === "InsertClip") {
+                  const clipId = crypto.randomUUID();
+                  if (run({ ...command, clipId })) store.getState().setSelection([clipId]);
+                }
+              }}
+            >
+              <div
+                className="sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-[var(--editor-border)] bg-[var(--editor-panel)] px-1 text-[9px]"
+                style={{ width: HEADER }}
+              >
+                <button
+                  aria-pressed={activeTrackId === track.id}
+                  title={`${track.name}: ${TRACK_ROLES[track.name] || track.type}`}
+                  className={`w-8 shrink-0 ${activeTrackId === track.id ? "text-cyan-300 ring-1 ring-cyan-300" : ""}`}
+                  onClick={() => store.getState().selectTrack(track.id)}
+                >
+                  {track.name}
+                </button>
+                <button
+                  disabled={busy}
+                  aria-label={`Toggle visibility ${track.name}`}
+                  aria-pressed={track.visible}
+                  title="Composition visibility (rendering pending)"
+                  onClick={() =>
+                    run({
+                      type: "UpdateTrack",
+                      trackId: track.id,
+                      patch: { visible: !track.visible },
+                    })
+                  }
+                >
+                  {track.visible ? "V" : "-"}
+                </button>
+                <button
+                  disabled={busy}
+                  aria-label={`Toggle mute ${track.name}`}
+                  aria-pressed={track.muted}
+                  title="Composition mute (source preview unaffected)"
+                  onClick={() =>
+                    run({ type: "UpdateTrack", trackId: track.id, patch: { muted: !track.muted } })
+                  }
+                >
+                  {track.muted ? "M" : "A"}
+                </button>
+                <button
+                  disabled={busy}
+                  aria-label={`Toggle lock ${track.name}`}
+                  aria-pressed={track.locked}
+                  onClick={() =>
+                    run({
+                      type: "UpdateTrack",
+                      trackId: track.id,
+                      patch: { locked: !track.locked },
+                    })
+                  }
+                >
+                  {track.locked ? "L" : "U"}
+                </button>
+                <button
+                  disabled={busy || track.order === 0}
+                  aria-label={`Move track ${track.name} up`}
+                  onClick={() =>
+                    run({
+                      type: "UpdateTrack",
+                      trackId: track.id,
+                      patch: { order: track.order - 1 },
+                    })
+                  }
+                >
+                  ^
+                </button>
+                <button
+                  disabled={busy || track.order === tracks.length - 1}
+                  aria-label={`Move track ${track.name} down`}
+                  onClick={() =>
+                    run({
+                      type: "UpdateTrack",
+                      trackId: track.id,
+                      patch: { order: track.order + 1 },
+                    })
+                  }
+                >
+                  v
+                </button>
+                <select
+                  disabled={busy}
+                  aria-label={`Track height ${track.name}`}
+                  value={track.height}
+                  className="w-10 bg-[var(--editor-panel)]"
+                  onChange={(e) =>
+                    run({
+                      type: "UpdateTrack",
+                      trackId: track.id,
+                      patch: { height: Number(e.target.value) },
+                    })
+                  }
+                >
+                  {[...new Set([28, 36, 56, 80, 120, track.height])]
+                    .sort((a, b) => a - b)
+                    .map((n) => (
+                      <option key={n}>{n}</option>
+                    ))}
+                </select>
+              </div>
+              <div
+                className={`timeline-track relative flex-1 ${track.locked ? "opacity-50" : ""}`}
+                onPointerDown={(e) => {
+                  if (e.target === e.currentTarget) {
+                    store.getState().setSelection([]);
+                    store.getState().selectTrack(track.id);
+                  }
+                }}
+              >
+                {track.clips
+                  .filter(
+                    (clip) =>
+                      (clip.start + clip.duration) * zoom >= scrollLeft - HEADER - 100 &&
+                      clip.start * zoom < scrollLeft + viewportWidth + 100,
+                  )
+                  .map((clip) => {
+                    const item = index.clips.get(clip.id)!;
+                    const label =
+                      item.asset?.filename ||
+                      (item.layer && "text" in item.layer.properties
+                        ? item.layer.properties.text
+                        : item.layer?.type) ||
+                      "Clip";
+                    return (
+                      <ClipBlock
+                        key={clip.id}
+                        id={clip.id}
+                        label={label}
+                        thumbnail={item.asset ? thumbnails.get(item.asset.id) : undefined}
+                        audio={track.type === "audio"}
+                        start={clip.start * zoom}
+                        width={Math.max(4, clip.duration * zoom - 2)}
+                        onPointerDown={(e) => {
+                          e.currentTarget.focus();
+                          gesture(e, clip.id);
+                        }}
+                        onTrim={(e, edge) => gesture(e, clip.id, edge)}
+                        onFocus={() => {
+                          if (item.scene && item.layer) onLayer(item.scene.id, item.layer.id);
+                          else if (item.asset) onAsset(item.asset.id);
+                        }}
+                      />
+                    );
+                  })}
+                <TrackGhost trackId={track.id} zoom={zoom} />
+              </div>
+            </div>
+          ))}
+          <Playhead zoom={zoom} fps={project.fps} />
+        </div>
+      </div>
+    </section>
+  );
+});

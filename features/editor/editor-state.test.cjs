@@ -47,16 +47,10 @@ test("transient editor changes do not mutate initial state or mix source and tim
     fullscreen: false,
   };
   let state = editorReducer(initialEditorState, { type: "preview", preview });
-  state = editorReducer(state, { type: "playhead", time: 999 });
-  state = editorReducer(state, { type: "zoom", zoom: 1000 });
   state = editorReducer(state, { type: "tab", tab: "scenes" });
-  assert.equal(state.playhead, 999);
-  assert.equal(state.timelineZoom, 80);
   assert.equal(state.preview.currentTime, 15);
   assert.equal(state.sidebarTab, "scenes");
-  assert.equal(initialEditorState.playhead, 0);
   assert.equal(initialEditorState.preview.assetId, null);
-  assert.equal(editorReducer(state, { type: "playhead", time: -10 }).playhead, 0);
 });
 
 test("shortcut guard recognizes editing controls and tolerates non-element targets", () => {

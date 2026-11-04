@@ -1,5 +1,5 @@
 // @ts-check
-const { DEFAULT_PANELS, clamp } = require("./layout.cjs");
+const { DEFAULT_PANELS } = require("./layout.cjs");
 
 /** @param {never} action @returns {never} */
 function assertNever(action) {
@@ -12,8 +12,6 @@ const initialEditorState = {
   panels: { ...DEFAULT_PANELS },
   preview: { assetId: null, currentTime: 0, duration: 0, playing: false, fullscreen: false },
   settingsOpen: false,
-  timelineZoom: 12,
-  playhead: 0,
 };
 
 /** @param {import('./types').EditorState} state @param {import('./types').EditorAction} action @returns {import('./types').EditorState} */
@@ -27,10 +25,6 @@ function editorReducer(state, action) {
       return { ...state, preview: action.preview };
     case "settings":
       return { ...state, settingsOpen: action.open };
-    case "zoom":
-      return { ...state, timelineZoom: clamp(action.zoom, 4, 80) };
-    case "playhead":
-      return { ...state, playhead: clamp(action.time, 0, 86400) };
     default:
       return assertNever(action);
   }

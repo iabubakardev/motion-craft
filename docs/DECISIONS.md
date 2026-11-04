@@ -27,3 +27,14 @@
 | 2026-11-04 | Fail saves on unreadable existing media catalogs                           | Preserve approved bindings and prior saved data instead of treating corruption as an empty catalog                  | Implemented and regression-tested |
 
 Add dated entries when making or changing significant technical decisions.
+
+## Phase 4 decisions (2026-11-04)
+
+- Keep persisted timing in seconds; accept integer project-frame command inputs with explicit conversion. Preserve imported fractional timing on moves rather than silently quantizing source ranges.
+- Introduce strict schema v2 for persisted track controls and null source endpoints for still/generated content. Validate v1 before migration and require reviewed replacement; a migrated document must be saved as v2.
+- Keep scene layers canonical and contained in their scene. Timeline edits update layers and derived clips atomically; standalone media clips remain independent. Cross-scene transfer/ripple require a future ownership design.
+- Reject new same-track timeline overlaps; allow adjacent clips and preserve legacy/imported overlaps. No automatic destructive overwrite/ripple. Existing scene tools retain composition semantics.
+- Add pinned Zustand 5.0.16 (MIT, React 19 compatible, no native code) for focused transient subscriptions across the library, timeline and inspector. Keep project/history in the existing controller. No additional drag, form, virtualization or test dependency is justified for this slice.
+- Use native media drag-and-drop and pointer events, rAF previews and window gesture cleanup. One command/history commit on pointer release; Escape cancels. Reuse the existing Node runner with checked JSDoc CommonJS domain modules so Node/Electron tests need no new transpilation pipeline.
+- Use horizontal visible-range rendering and memoized indexes; seven tracks do not justify TanStack Virtual yet. Large-project profiling remains pending; bounded full project snapshots remain the existing history tradeoff.
+- Persist visibility and mute as composition flags; show their current source-preview limitation explicitly until a composition renderer exists. Do not fake waveforms or composition playback.

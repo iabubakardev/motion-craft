@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { assertLockedTracksUnchanged } from "@/core/timeline/locks.cjs";
+import { executeTimelineCommand } from "@/core/timeline/commands.cjs";
+import type { TimelineCommand } from "@/core/timeline/types";
 import type { useMediaLibrary } from "@/features/media/use-media-library";
 import type { Layer, Project, ProjectHistory, ValidationIssue } from "@/core/project/types";
 import * as operations from "@/core/project/operations.cjs";
@@ -25,6 +28,7 @@ const bootstrap = operations.createProject({
   ),
 });
 export interface ProjectCandidate {
+  migratedFrom?: 1;
   project: Project;
   candidateId: string | null;
   filename: string | null;
@@ -37,6 +41,7 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
   const epoch = useRef(0);
   const busyRef = useRef(false);
   const [ready, setReady] = useState(false);
+  const [documentGeneration, setDocumentGeneration] = useState(0);
   const [desktop, setDesktop] = useState(false);
   const [busy, setBusy] = useState(false);
   const [filename, setFilename] = useState<string | null>(null);
@@ -140,6 +145,7 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
     try {
       const snapshot = current.current;
       const next = operation(snapshot.present);
+      assertLockedTracksUnchanged(snapshot.present, next);
       install(commitProject(snapshot, next));
       setIssues([]);
       setNotice("");
@@ -150,19 +156,44 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
     }
   }
 
-  function selectScene(id: string) {
-    setActiveSceneId(id);
-    setSelectedLayerId(null);
-    setSelectedId(null);
-  }
-  function selectLayer(sceneId: string, layerId: string) {
-    const layer = current.current.present.scenes
-      .find((scene) => scene.id === sceneId)
-      ?.layers.find((item) => item.id === layerId);
-    setActiveSceneId(sceneId);
-    setSelectedLayerId(layerId);
-    setSelectedId(layer && "assetId" in layer ? layer.assetId : null);
-  }
+  const selectScene = useCallback(
+    (id: string) => {
+      setActiveSceneId(id);
+      setSelectedLayerId(null);
+      setSelectedId(null);
+    },
+    [setSelectedId],
+  );
+  const selectLayer = useCallback(
+    (sceneId: string, layerId: string) => {
+      const layer = current.current.present.scenes
+        .find((scene) => scene.id === sceneId)
+        ?.layers.find((item) => item.id === layerId);
+      setActiveSceneId(sceneId);
+      setSelectedLayerId(layerId);
+      setSelectedId(layer && "assetId" in layer ? layer.assetId : null);
+    },
+    [setSelectedId],
+  );
+  const executeTimeline = useCallback(
+    (command: TimelineCommand, expected?: Project) => {
+      if (!ready || busyRef.current) return false;
+      try {
+        const snapshot = current.current;
+        if (expected && expected !== snapshot.present)
+          throw new Error("The project changed during this gesture. Try the edit again.");
+        const next = executeTimelineCommand(snapshot.present, command, new Date().toISOString());
+        install(commitProject(snapshot, next));
+        setIssues([]);
+        setNotice("");
+        return true;
+      } catch (error) {
+        reportError(error);
+        return false;
+      }
+    },
+    [ready, install, reportError],
+  );
   function addScene() {
     const next = mutate(operations.addScene);
     if (next) selectScene(next.scenes[next.scenes.length - 1].id);
@@ -222,13 +253,16 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
     try {
       const result = await activateProject(candidate.project, candidate.candidateId);
       epoch.current++;
+      setDocumentGeneration((value) => value + 1);
       replaceAssets(result.assets);
       setSelectedId(null);
       setActiveSceneId(null);
       setSelectedLayerId(null);
       const next = createHistory(result.project);
       // Imported/new documents have no current file. Opening a saved file starts at a clean checkpoint.
-      install(candidate.mode === "import" ? { ...next, savedJSON: "" } : next);
+      install(
+        candidate.mode === "import" || candidate.migratedFrom ? { ...next, savedJSON: "" } : next,
+      );
       setFilename(result.filename);
       setCandidate(null);
       setNotice(
@@ -278,6 +312,8 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
       : undefined;
   return {
     project,
+    executeTimeline,
+    documentGeneration,
     ready,
     desktop,
     dirty,

@@ -1,6 +1,6 @@
 # MotionCraft engineering standards
 
-These are permanent repository rules. Read this document through `AGENTS.md` before every task, then inspect the relevant product, architecture, roadmap, format and decision documents. Explicit user instructions determine task scope. Phase 3 remains the current project foundation/hardening milestone; these standards do not authorize Phase 4 or any future feature.
+These are permanent repository rules. Read this document through `AGENTS.md` before every task, then inspect the relevant product, architecture, roadmap, format and decision documents. Explicit user instructions determine task scope. Phase 4 timeline editing was separately authorized and is implemented as documented in TIMELINE.md. These standards do not authorize future milestones.
 
 ## 1. Preserve the established system
 
@@ -43,7 +43,7 @@ The existing React hooks, editor reducer, project snapshots and Node test runner
 
 ## 5. Editing domain, timing and history
 
-- Implement edits as testable commands preserving project invariants: existing `addScene`, `deleteScene`, `duplicateScene`, `reorderScene`, `updateLayer` are examples. Future MoveClip/TrimClip/SplitClip commands require a separately authorized milestone; do not implement them as part of standards work.
+- Implement edits as testable commands preserving project invariants: existing `addScene`, `deleteScene`, `duplicateScene`, `reorderScene`, `updateLayer` are examples. Phase 4 MoveClip/TrimClip/SplitClip commands are separately authorized and implemented in core/timeline; future commands still require explicit task scope.
 - Keep commands atomic and immutable. Pass or isolate ID/clock generation where deterministic tests need it. Preserve unrelated scenes, assets, properties and metadata. Invalid edits return useful errors and leave the prior document intact.
 - Schema v1 timing is finite seconds: contiguous scene-array order, scene-relative layers, timeline-global clips, and strict derived clip consistency. Keep `PROJECT_FORMAT.md` authoritative. Do not silently convert persisted v1 data to frames.
 - Prefer integer frame coordinates for future editing gestures/commands, with explicit FPS conversion and documented rounding at the v1 boundary. Use deterministic helpers and test fractional-second boundaries, durations and source ranges. A format change requires a versioned, tested migration.

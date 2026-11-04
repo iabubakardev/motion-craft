@@ -5,11 +5,32 @@ const issuesSchema = z.array(z.object({ path: z.string(), message: z.string() })
 const openResultSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("canceled") }).strict(),
   z.object({ status: z.literal("error"), errors: issuesSchema }).strict(),
-  z.object({ status: z.literal("ready"), project: projectSchema, filename: z.string(), candidateId: idSchema }).strict(),
+  z
+    .object({
+      status: z.literal("ready"),
+      project: projectSchema,
+      filename: z.string(),
+      candidateId: idSchema,
+      migratedFrom: z.literal(1).optional(),
+    })
+    .strict(),
 ]);
-const activationResultSchema = z.object({ project: projectSchema, assets: mediaAssetsSchema, filename: z.string().nullable(), missingAssetIds: z.array(idSchema) }).strict();
+const activationResultSchema = z
+  .object({
+    project: projectSchema,
+    assets: mediaAssetsSchema,
+    filename: z.string().nullable(),
+    missingAssetIds: z.array(idSchema),
+  })
+  .strict();
 const saveResultSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("canceled") }).strict(),
   z.object({ status: z.literal("saved"), filename: z.string() }).strict(),
 ]);
-module.exports = { issuesSchema, openResultSchema, activationResultSchema, saveResultSchema, relinkResultSchema: mediaAssetSchema.nullable() };
+module.exports = {
+  issuesSchema,
+  openResultSchema,
+  activationResultSchema,
+  saveResultSchema,
+  relinkResultSchema: mediaAssetSchema.nullable(),
+};

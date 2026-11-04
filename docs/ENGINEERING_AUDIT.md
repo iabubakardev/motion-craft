@@ -59,3 +59,11 @@ Results: `npm run check` passed repository lint, generated-route TypeScript and 
 - Updated `eslint.config.mjs`, `package.json`, `package-lock.json`.
 - Updated `electron/{project-store.cjs, project-store.test.cjs}`, `electron/ipc/projects.cjs`.
 - Updated `features/editor/{editor-state.cjs, editor-state.test.cjs}` and `features/projects/use-project-document.ts`.
+
+## Phase 4 follow-up (2026-11-04)
+
+The Phase 3 audit above is historical. The separately authorized Phase 4 timeline working slice is now implemented; see [Timeline](TIMELINE.md). New domain modules use checked JSDoc, strict command inputs and colocated Node tests. Clip edits preserve canonical scene/layer ownership, with integer-frame commands over seconds-based schema v2 and strict v1 migration. Transient Zustand previews are outside project snapshots and native IPC remains unchanged except for validated migration metadata.
+
+The full dependency audit still reports 18 findings: 2 high (Electron and extract-zip), 16 moderate (existing lint/tooling chain), no critical. Zustand has no reported advisory in this scan. Evidence: ignored `.next/phase4-audit.json`. The existing Electron/installer and production CSP/packaging findings remain release gates; no forced upgrades were applied.
+
+Phase 4 verification: lint, Next route generation, strict TypeScript, 42 unit tests and the production Next build pass. Existing Electron preload/media/project suites pass, and the timeline suite exercises native clip pointer edits, canceled gestures, history, frame timing, multi-clip copy/paste/delete, track flags and exact save/new/reopen. It also verifies reviewed native v1 migration, dirty tracking and explicit v2 save. Native pickers are stubbed and media placement uses DOM drag events; actual Windows picker/high-DPI gestures, codec breadth and thousands-of-clips profiling remain unverified. No composition rendering or packaged Electron runtime is claimed.

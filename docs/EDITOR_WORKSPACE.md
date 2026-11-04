@@ -16,17 +16,17 @@ Each divider supports dragging with pointer capture, arrow-key resizing (10px, S
 
 Only `{ version: 1, left, right, bottom }` is saved under `motioncraft.workspace-layout.v1` in localStorage. Invalid or unavailable storage falls back to defaults. No paths, assets, project data or media selection are saved in browser state. Layout preferences hydrate after the first render, keeping server/client markup consistent.
 
-`useEditorState` combines the single media-session hook with an editor reducer. The media hook owns the selected ID; reducer state owns sidebar tab, preview status, panel preferences, timeline zoom and marker. Project data/history are owned separately by `useProjectDocument`. Child panels receive explicit props. No state-management or resize dependencies were added.
+`useEditorState` combines the single media-session hook with an editor reducer. The media hook owns the selected ID; reducer state owns sidebar tab, source preview status and panel preferences. A separate per-workspace Zustand store owns timeline zoom, frame playhead, selection, viewport, clipboard and active drag. Project data/history are owned separately by `useProjectDocument`. Child panels receive explicit props. Phase 4 adds Zustand for selectively subscribed timeline state; resize controls still use native pointer events.
 
 ## Shortcuts
 
-| Shortcut | Behavior |
-|---|---|
-| Space | Toggle the selected playable source |
-| Escape | Exit fullscreen first, otherwise clear media selection |
-| Ctrl+O | Open the existing native media importer when available |
-| Ctrl+S | Save the current desktop project |
-| Ctrl+Z / Ctrl+Shift+Z | Undo/redo project edits outside text inputs |
+| Shortcut              | Behavior                                               |
+| --------------------- | ------------------------------------------------------ |
+| Space                 | Toggle the selected playable source                    |
+| Escape                | Exit fullscreen first, otherwise clear media selection |
+| Ctrl+O                | Open the existing native media importer when available |
+| Ctrl+S                | Save the current desktop project                       |
+| Ctrl+Z / Ctrl+Shift+Z | Undo/redo project edits outside text inputs            |
 
 Text inputs, selects and editable content are protected. Space also leaves focused buttons, tabs and sliders to their own keyboard behavior. A modal settings dialog receives its own keys. Repeat/composition events are ignored. Window keyboard, document fullscreen and resize-observer listeners have explicit cleanup.
 
@@ -34,7 +34,7 @@ Electron permissions allow fullscreen only for trusted main frames in owned app 
 
 ## Timeline scope
 
-The timeline shows actual project scenes, tracks and clips. The ruler covers at least two minutes and grows with project duration. Scene/layer entries are selectable validated data, not mock clips. The marker is independent of source playback. There is no clip drag-and-drop, trimming, splitting, snapping, keyframes or timeline/composition playback. Scene/layer editing and JSON/persistence rules are documented in [Project format](PROJECT_FORMAT.md).
+The timeline edits actual project tracks and clips using integer-frame commands: media placement, move/trim/split, multi-selection, copy/paste/delete and snapping. The empty ruler covers two minutes; nonempty timelines use project/viewport extent, zoom/fit and an independent frame playhead. Visible horizontal clip ranges are rendered. See [Timeline](TIMELINE.md) for shortcuts, overlap/scene policies, persisted controls and limitations. Keyframes and composition playback remain pending.
 
 ## Verification
 
@@ -57,7 +57,7 @@ Pure unit tests cover dimension constraints, strict persisted-layout validation,
 
 Verified on 2026-11-04: lint and TypeScript passed, the then-current 15 unit/security tests passed, the original desktop preload/sandbox smoke passed, and the expanded media/workspace integration suite passed including 820px/520px browser layouts. No hydration errors were captured. The desktop smoke logged Chromium GPU messages after its successful assertions; no production build or packaged installer verification is claimed.
 
-Manual checks remain for the actual Windows picker, representative codecs, high-DPI/multiple-monitor dragging and extended editing sessions. Project saving, scenes/layers, JSON exchange and history are implemented in Phase 3. Advanced timeline editing, composition playback and video export remain future work. See [Project format and Phase 3 verification](PROJECT_FORMAT.md).
+Manual checks remain for the actual Windows picker, representative codecs, high-DPI/multiple-monitor dragging and extended editing sessions. Project saving, scenes/layers, JSON exchange and history are implemented in Phase 3. The Phase 4 editing slice is implemented; advanced ripple/scene transfer, composition playback and video export remain future work. See [Project format and Phase 3 verification](PROJECT_FORMAT.md).
 
 ## Changed modules
 

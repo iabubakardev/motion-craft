@@ -1,17 +1,17 @@
-# Project JSON format and timing (schemaVersion 1)
+# Project JSON format and timing (schemaVersion 2; v1 migration supported)
 
 The project document is the source of truth for editing data. React UI state, playback status, native file paths and runtime media URLs are separate. The same strict Zod schemas validate renderer imports and Electron file operations; TypeScript types are inferred from those schemas.
 
 ## Format
 
-See the complete [sample project](../public/sample-project.motioncraft.json). Its image is intentionally unavailable until relinked; media bytes are never embedded.
+See the complete [sample project](../public/sample-project.motioncraft.json). It remains a v1 migration fixture. Its image is intentionally unavailable until relinked; media bytes are never embedded. New exports/save files use v2.
 
 | Entity  | Fields                                                                                                                                                           |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Project | `schemaVersion`, `id`, `name`, `createdAt`, `updatedAt`, `resolution`, `fps`, `aspectRatio`, `duration`, `stylePreset`, `assets`, `scenes`, `tracks`, `settings` |
 | Scene   | `id`, `name`, `start`, `duration`, `narration`, `stylePreset`, `layers`, `transitionIn`, `transitionOut`, `metadata`                                             |
 | Layer   | `id`, `type`, media-only `assetId`, `trackId`, `start`, `duration`, `position`, `scale`, `rotation`, `opacity`, `zIndex`, `animation`, typed `properties`        |
-| Track   | `id`, `name`, `type`, `order`, `clips`                                                                                                                           |
+| Track   | `id`, `name`, `type`, `order`, `visible`, `muted`, `locked`, `height`, `clips`                                                                                   |
 | Clip    | `id`, exactly one of `assetId`/`layerId`, `trackId`, `start`, `duration`, `sourceStart`, `sourceEnd`                                                             |
 | Asset   | `id`, basename `filename`, `type`, `mimeType`, `size`, `importedAt`, optional `duration`, `width`, `height`                                                      |
 
@@ -39,13 +39,13 @@ All times are finite seconds. Duration is positive for scenes/layers/clips; an e
 
 For example, a scene starting at 5 seconds with a layer at scene-relative 1 second produces a clip at global 6 seconds. If its duration is 3 and sourceStart is 2, sourceEnd is 5. No playback speed changes are supported, so `sourceEnd - sourceStart === duration`.
 
-Scenes are contiguous and ordered by their array. Reorder/delete/duration operations recompute scene starts, derived clips and project duration atomically. Standalone asset clips imported in JSON retain their own global positions. They are displayed but do not have advanced editing controls yet. Overlapping layers/clips are permitted; layer `zIndex` defines future composition order. New layers prefer unused compatible tracks within their scene.
+Scenes are contiguous and ordered by their array. Reorder/delete/duration operations recompute scene starts, derived clips and project duration atomically. Standalone asset clips imported in JSON retain their own global positions. They can be placed, moved, trimmed, split and copied in the timeline. The schema continues to accept existing/imported overlaps to preserve legacy documents; new timeline commands reject same-track overlaps (adjacency is allowed). Existing scene-layer operations retain their composition semantics and can create overlaps. New layers prefer unused unlocked compatible tracks within their scene. Track locks also guard scene/layer commits that would change locked content.
 
 Derived clips are serialized for interchange, but cannot disagree with their canonical layer. Conflicting global/relative timing, duplicate clips or missing derived clips cause validation errors rather than normalization. Shortening a scene that would cut off a layer is rejected, preserving the original document. Transitions do not overlap or alter sequence timing in v1.
 
 ## Validation and import
 
-Only schemaVersion 1 is supported; there is no silent migration. Every object is strict, so unsupported fields are reported rather than dropped. Validation checks references, media/track compatibility, unique IDs/orders, durations, source ranges, scene containment and derived timing. Resolution is 64-8192 pixels per axis; FPS supports 24/25/30/50/60; aspect ratios are 16:9, 9:16, 1:1 and 4:3 and must match the resolution. Timing is limited to 24 hours. Project JSON is limited to 5 MB, including exported formatted JSON.
+Schema versions 1 and 2 are accepted. Version 1 first passes its original strict structural and relational validation, then migrates to v2 for explicit review. IDs, exact seconds, source references and manual properties are preserved. Migration adds visible=true, muted=false, locked=false and height=36 to tracks, and changes non-playable clip source endpoints to null. A migrated open/import is dirty until saved as v2. Unknown fields/versions are rejected. Version 2 exports are not backward compatible with older MotionCraft versions. Every object is strict, so unsupported fields are reported rather than dropped. Validation checks references, media/track compatibility, unique IDs/orders, durations, source ranges, scene containment and derived timing. Resolution is 64-8192 pixels per axis; FPS supports 24/25/30/50/60; aspect ratios are 16:9, 9:16, 1:1 and 4:3 and must match the resolution. Timing is limited to 24 hours. Project JSON is limited to 5 MB, including exported formatted JSON.
 
 The UI accepts pasted JSON or an uploaded file, displays path-specific errors, and presents a summary before replacement. Open uses the same validation and review step. Cancel keeps the current project and save destination. Confirmation explicitly warns about unsaved changes and resets history. Browser JSON import/export works without Electron; declared local media is unavailable there.
 
@@ -73,7 +73,7 @@ History keeps up to 50 immutable past document snapshots. Scene/layer/project-se
 
 Media imports/metadata enrich the document and all history snapshots without creating scene-history entries. Metadata completion can make a saved snapshot dirty; save again to persist it. Replacing a document aborts pending metadata probes and ignores stale generations. Neither probe results nor pending native operations may overwrite a replacement document.
 
-Scenes and layer controls edit real data, and the timeline displays its validated projection. The source monitor still plays original files. Transforms, styles, animations and transitions are not composited; video export, timeline drag-and-drop/trimming and composition playback remain deferred.
+Scenes and layer controls edit real data, and the timeline displays its validated projection. The source monitor still plays original files. Transforms, styles, animations and transitions are not composited; video export and composition playback remain deferred. Timeline editing is documented in [Timeline](TIMELINE.md).
 
 ## Verification and files
 
@@ -100,3 +100,7 @@ Added modules:
 Updated editor state/toolbar/settings/workspace/sidebar/shortcuts, scene manager, inspector, timeline/ruler, media hook/metadata probes, Electron main/preload/media registry/smoke tests, bridge types, test scripts and project documentation. No dependencies were added.
 
 Next milestone: composition preview driven by this validated scene/layer model, then dedicated timeline editing operations and persistence recovery work.
+
+## Phase 4 timing boundary
+
+Seconds remain the serialized unit in v2. Video/audio source endpoints are numeric and differ by clip duration; image, text, shape and caption source endpoints are both null. Track height is an integer from 28 to 160 pixels. Track order is unique, visibility/mute/lock are required booleans. Clip command inputs are integer project frames; edits have at least one frame. Imported fractional-second placement is preserved until explicitly edited. Moves add an exact frame delta without quantizing legacy durations/source ranges; trim/split edges and inspector start/duration use project frames. See [conversion and ownership rules](TIMELINE.md).
