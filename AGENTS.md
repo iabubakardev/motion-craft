@@ -2,10 +2,14 @@
 
 Read `docs/ARCHITECTURE.md` and `docs/ROADMAP.md` before making architectural changes. Treat `docs/PROJECT_CONTEXT.md` as product requirements. The uploaded MotionCraft handoff remains the detailed product source of truth; update local docs when decisions change.
 
+Read and follow `docs/ENGINEERING_STANDARDS.md` for every task. Review the relevant findings in `docs/ENGINEERING_AUDIT.md` before changing the affected area. Preserve Phase 3 project invariants and public APIs; Phase 4 timeline editing requires a separate user request. Existing timeline data views do not authorize implementing editing tools.
+
 ## Product
+
 MotionCraft is a local-first Windows desktop video editor with optional AI assistance. Stack: Next.js App Router, React, TypeScript, Tailwind, Electron, Remotion, FFmpeg; later Ollama, faster-whisper, PostgreSQL, Redis/BullMQ as needed. Core editing must work without paid APIs or AI.
 
 ## Boundaries
+
 Use root-level source directories; this repository does not use a `src/` directory. The `@/*` alias maps to `./*`. Create planned directories only when needed.
 
 - `app`: route composition only, not business logic.
@@ -18,6 +22,7 @@ Use root-level source directories; this repository does not use a `src/` directo
 - `workers`: later long-running transcription, indexing and rendering coordination; avoid blocking renderer/UI.
 
 ## Engineering rules
+
 - Keep changes small and targeted. Reuse existing code; do not add a dependency without explaining why.
 - TypeScript strict; no `any` without justification. Validate external JSON and IPC inputs with Zod.
 - Preserve stable IDs and manual edits; scene regeneration must not mutate unrelated scenes.
@@ -30,11 +35,13 @@ Use root-level source directories; this repository does not use a `src/` directo
 - Update README/docs when behavior, setup or architecture changes.
 
 ## Workflow for each task
+
 1. Inspect relevant existing files and summarize the plan briefly.
 2. Implement the smallest working vertical slice.
 3. Run relevant lint, typecheck and tests (or state what could not run).
 4. Report changed files, behavior, verification, risks and next step.
 5. Do not refactor unrelated areas or silently change confirmed decisions.
+6. Format new and substantively changed files with the pinned Prettier; do not reformat unrelated files. Run TypeScript, lint and relevant tests, and report any checks that could not run. Add a dependency only for a demonstrated need after compatibility/security review.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

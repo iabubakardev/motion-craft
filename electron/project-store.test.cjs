@@ -8,6 +8,27 @@ const { createProjectStore } = require("./project-store.cjs");
 const ops = require("../core/project/operations.cjs");
 const { serializeProject } = require("../core/project/schema.cjs");
 
+test("save preserves unreadable catalog and the previous project instead of replacing bindings", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "motioncraft-catalog-recovery-"));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const project = ops.createProject();
+  const filename = path.join(directory, "project.motioncraft.json");
+  const catalogDirectory = path.join(directory, "bindings");
+  const store = createProjectStore(catalogDirectory, createMediaLibrary());
+  await store.save(filename, project);
+  const catalog = path.join(catalogDirectory, `${project.id}.media.json`);
+  await fs.writeFile(catalog, "{corrupted catalog");
+  await assert.rejects(
+    store.save(filename, { ...project, name: "New edit" }),
+    /Existing project files and bindings were preserved/,
+  );
+  assert.equal(await fs.readFile(catalog, "utf8"), "{corrupted catalog");
+  assert.equal(await fs.readFile(filename, "utf8"), serializeProject(project));
+  // Loading the portable project still works; an unavailable local catalog is not invalid project data.
+  assert.equal((await store.read(filename)).success, true);
+  assert.deepEqual((await store.resolve(project)).missingAssetIds, []);
+});
+
 test("atomic project save/open round trip restores approved media IDs after registry restart", async (t) => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "motioncraft-project-test-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
@@ -32,7 +53,10 @@ test("atomic project save/open round trip restores approved media IDs after regi
   const resolved = await reopened.resolve(project);
   assert.equal(resolved.missingAssetIds.length, 0);
   assert.equal(resolved.assets[0].id, project.assets[0].id);
-  assert.equal(await (await library.respond(new Request(resolved.assets[0].url))).text(), "approved image data");
+  assert.equal(
+    await (await library.respond(new Request(resolved.assets[0].url))).text(),
+    "approved image data",
+  );
 });
 
 test("invalid/corrupt project files and absent bindings never authorize JSON-supplied paths", async (t) => {
@@ -42,7 +66,10 @@ test("invalid/corrupt project files and absent bindings never authorize JSON-sup
   const mediaPath = path.join(directory, "image.png");
   await fs.writeFile(mediaPath, "approved bytes");
   const imported = await library.importFiles([mediaPath]);
-  const project = ops.mergeProjectAssets(ops.createProject(), imported.assets.map(ops.toProjectAsset));
+  const project = ops.mergeProjectAssets(
+    ops.createProject(),
+    imported.assets.map(ops.toProjectAsset),
+  );
   const store = createProjectStore(path.join(directory, "bindings"), createMediaLibrary());
   const unavailable = await store.resolve(project);
   assert.equal(unavailable.assets[0].status, "error");
@@ -63,9 +90,13 @@ test("missing/modified media stays declared, relinking preserves IDs, failed wri
   const library = createMediaLibrary();
   const original = path.join(directory, "original.png");
   const replacement = path.join(directory, "replacement.png");
-  await fs.writeFile(original, "original media"); await fs.writeFile(replacement, "replacement");
+  await fs.writeFile(original, "original media");
+  await fs.writeFile(replacement, "replacement");
   const result = await library.importFiles([original]);
-  const project = ops.mergeProjectAssets(ops.createProject(), result.assets.map(ops.toProjectAsset));
+  const project = ops.mergeProjectAssets(
+    ops.createProject(),
+    result.assets.map(ops.toProjectAsset),
+  );
   const filename = path.join(directory, "project.motioncraft.json");
   const store = createProjectStore(path.join(directory, "bindings"), library);
   await store.save(filename, project);
@@ -77,6 +108,8 @@ test("missing/modified media stays declared, relinking preserves IDs, failed wri
   const relinked = await newLibrary.relinkAsset(project.assets[0], replacement);
   assert.equal(relinked.id, project.assets[0].id);
   assert.equal(relinked.filename, "replacement.png");
-  await assert.rejects(openStore.save(path.join(directory, "absent", "project.motioncraft.json"), project));
+  await assert.rejects(
+    openStore.save(path.join(directory, "absent", "project.motioncraft.json"), project),
+  );
   assert.equal(await fs.readFile(filename, "utf8"), serializeProject(project));
 });

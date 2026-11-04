@@ -23,14 +23,14 @@ See [Roadmap](docs/ROADMAP.md) for checked milestones.
 
 ## Tech stack
 
-| Layer | Technology | Status |
-|---|---|---|
-| UI | Next.js, React, TypeScript, Tailwind | Foundation |
-| Desktop shell | Electron | Development verified; packaging pending |
-| Composition | Remotion | Planned |
-| Processing | FFmpeg | Planned |
-| Local AI | Ollama, faster-whisper | Planned |
-| Persistence / jobs | PostgreSQL, Redis, BullMQ | Later phases |
+| Layer              | Technology                           | Status                                  |
+| ------------------ | ------------------------------------ | --------------------------------------- |
+| UI                 | Next.js, React, TypeScript, Tailwind | Foundation                              |
+| Desktop shell      | Electron                             | Development verified; packaging pending |
+| Composition        | Remotion                             | Planned                                 |
+| Processing         | FFmpeg                               | Planned                                 |
+| Local AI           | Ollama, faster-whisper               | Planned                                 |
+| Persistence / jobs | PostgreSQL, Redis, BullMQ            | Later phases                            |
 
 ## Development setup
 
@@ -68,6 +68,18 @@ If your terminal inherits `ELECTRON_RUN_AS_NODE=1`, clear it before launching El
 Run `npm run test:projects` against the running dev server to exercise real scene/layer UI, JSON paste/upload/export, replacement confirmation, save/open round trips, relinking, history and unsaved-change protection. Native dialog responses are stubbed and project files/profile are isolated under `.next`. A screenshot is saved to `.next/project-workspace-smoke.png`.
 
 The media integration suite also verifies workspace tabs and inspector, keyboard shortcuts and text-input protection, pointer/keyboard resizing, layout persistence, minimum desktop size, timeline zoom/scroll/marker, session settings and fullscreen. See [Workspace behavior and verification](docs/EDITOR_WORKSPACE.md).
+
+## Engineering workflow
+
+Read [Engineering standards](docs/ENGINEERING_STANDARDS.md) for every change; [Engineering audit](docs/ENGINEERING_AUDIT.md) records prioritized follow-up work. Phase 3 remains the current hardening milestone. Phase 4 is not started.
+
+```bash
+npm run check
+npm run format -- path/to/changed-file.ts
+npm run format:check -- path/to/changed-file.ts
+```
+
+`check` runs ESLint, route generation/strict TypeScript and unit tests. Formatting uses pinned Prettier 3.9.10; pass explicit files/directories to avoid unrelated changes. A full formatting baseline (`npm run format:check -- .`) still has legacy debt and is not a clean gate yet. Use `npm ci` for a clean lockfile-based install. LF is configured through Git, EditorConfig and Prettier. No state, form or test-runner migration is required by the standards.
 
 ## Architecture
 

@@ -1,5 +1,7 @@
 # MotionCraft roadmap
 
+Current milestone: Phase 3 foundation hardening and validation. Phase 4 multi-track editing has not started. Follow ENGINEERING_STANDARDS.md before future work.
+
 - [x] Next.js application created and running (user confirmed)
 - [x] Electron dev window and secure preload IPC verified (automated desktop smoke test)
 - [x] Session media library: native selection handler, safe asset URLs, search/filter/grid/list UI and image/video/audio preview (automated tests; dialog results stubbed)

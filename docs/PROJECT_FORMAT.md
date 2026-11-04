@@ -6,14 +6,14 @@ The project document is the source of truth for editing data. React UI state, pl
 
 See the complete [sample project](../public/sample-project.motioncraft.json). Its image is intentionally unavailable until relinked; media bytes are never embedded.
 
-| Entity | Fields |
-|---|---|
+| Entity  | Fields                                                                                                                                                           |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Project | `schemaVersion`, `id`, `name`, `createdAt`, `updatedAt`, `resolution`, `fps`, `aspectRatio`, `duration`, `stylePreset`, `assets`, `scenes`, `tracks`, `settings` |
-| Scene | `id`, `name`, `start`, `duration`, `narration`, `stylePreset`, `layers`, `transitionIn`, `transitionOut`, `metadata` |
-| Layer | `id`, `type`, media-only `assetId`, `trackId`, `start`, `duration`, `position`, `scale`, `rotation`, `opacity`, `zIndex`, `animation`, typed `properties` |
-| Track | `id`, `name`, `type`, `order`, `clips` |
-| Clip | `id`, exactly one of `assetId`/`layerId`, `trackId`, `start`, `duration`, `sourceStart`, `sourceEnd` |
-| Asset | `id`, basename `filename`, `type`, `mimeType`, `size`, `importedAt`, optional `duration`, `width`, `height` |
+| Scene   | `id`, `name`, `start`, `duration`, `narration`, `stylePreset`, `layers`, `transitionIn`, `transitionOut`, `metadata`                                             |
+| Layer   | `id`, `type`, media-only `assetId`, `trackId`, `start`, `duration`, `position`, `scale`, `rotation`, `opacity`, `zIndex`, `animation`, typed `properties`        |
+| Track   | `id`, `name`, `type`, `order`, `clips`                                                                                                                           |
+| Clip    | `id`, exactly one of `assetId`/`layerId`, `trackId`, `start`, `duration`, `sourceStart`, `sourceEnd`                                                             |
+| Asset   | `id`, basename `filename`, `type`, `mimeType`, `size`, `importedAt`, optional `duration`, `width`, `height`                                                      |
 
 IDs are UUIDs. Scene/layer duplication creates new scene and layer IDs while retaining asset references and manual content. Asset/scene/track IDs are unique within their collection; layer IDs are unique across scenes. Derived clip IDs deliberately equal their layer IDs in a separate entity namespace.
 
@@ -25,17 +25,17 @@ Supported style identifiers are `default`, `minimal`, `cinematic`, `bold`. Anima
 
 All times are finite seconds. Duration is positive for scenes/layers/clips; an empty project has duration zero. Intervals are half-open `[start, start + duration)`. Comparisons use a one-microsecond tolerance; known media source bounds allow a one-millisecond decoder tolerance. Data may use fractional seconds; FPS does not silently round imported timing.
 
-| Timing | Meaning / owner |
-|---|---|
-| Scene `start` | Timeline-global, derived from preceding scenes in array order |
-| Scene `duration` | Canonical scene length |
-| Layer `start` | Relative to the containing scene |
-| Layer `duration` | Canonical layer length, contained within its scene |
-| Layer playable `properties.sourceStart` | Offset into the original source |
-| Layer-linked clip `start` | Derived as `scene.start + layer.start` |
-| Layer-linked clip duration/track/source range | Derived from its layer; exactly one clip per layer |
-| Standalone asset clip timing | Canonical global placement in its track, independent of scene order |
-| Project `duration` | Maximum of scene-sequence length and standalone clip ends |
+| Timing                                        | Meaning / owner                                                     |
+| --------------------------------------------- | ------------------------------------------------------------------- |
+| Scene `start`                                 | Timeline-global, derived from preceding scenes in array order       |
+| Scene `duration`                              | Canonical scene length                                              |
+| Layer `start`                                 | Relative to the containing scene                                    |
+| Layer `duration`                              | Canonical layer length, contained within its scene                  |
+| Layer playable `properties.sourceStart`       | Offset into the original source                                     |
+| Layer-linked clip `start`                     | Derived as `scene.start + layer.start`                              |
+| Layer-linked clip duration/track/source range | Derived from its layer; exactly one clip per layer                  |
+| Standalone asset clip timing                  | Canonical global placement in its track, independent of scene order |
+| Project `duration`                            | Maximum of scene-sequence length and standalone clip ends           |
 
 For example, a scene starting at 5 seconds with a layer at scene-relative 1 second produces a clip at global 6 seconds. If its duration is 3 and sourceStart is 2, sourceEnd is 5. No playback speed changes are supported, so `sourceEnd - sourceStart === duration`.
 
@@ -63,7 +63,7 @@ This trusted, per-user catalog records native-selected canonical paths and file 
 
 Missing media stays declared with its stable ID and an unavailable preview. Select it in Media, then use **Relink media** in Properties. A native dialog authorizes a compatible replacement; asset IDs and layer references remain stable. If replacement metadata conflicts with an existing source range, validation reports it rather than trimming manual edits. Undeclared asset references are schema errors; a declared asset without a local binding is a valid missing-media case.
 
-Writes use a sibling temporary file, file sync and rename. The trusted catalog is updated before the project file and retains previous approved bindings, so a failed write does not invalidate an older saved project. The catalog and project are not a cross-file filesystem transaction. Save errors leave the active document dirty. No autosave, crash recovery, project bundling or media copying is implemented.
+Writes use a sibling temporary file, file sync and rename. The trusted catalog is updated before the project file and retains previous approved bindings, so a failed write does not invalidate an older saved project. The catalog and project are not a cross-file filesystem transaction. Save errors leave the active document dirty. An existing unreadable/corrupt local media catalog blocks saving and is preserved; opening the portable project can still proceed with unavailable media. No autosave, crash recovery, project bundling or media copying is implemented.
 
 Native open stages an opaque candidate; only confirmed activation changes the current save target. Input/output schemas and owning-window/main-frame/origin checks protect all project IPC. Reload invalidates staged operations and clears the previous save destination. Dirty documents install a beforeunload handler; Electron asks whether to keep editing or discard before reload/close. OS termination or a crash cannot be protected by this prompt.
 

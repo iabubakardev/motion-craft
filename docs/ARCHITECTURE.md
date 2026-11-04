@@ -1,6 +1,9 @@
 # Architecture and directory conventions
 
+The permanent [Engineering standards](ENGINEERING_STANDARDS.md) apply to all modules. See [Engineering audit](ENGINEERING_AUDIT.md) for scoped findings and release gates.
+
 ## Current approach
+
 Single Next.js application with Electron shell and modular feature folders. Source directories live at the repository root; there is no `src/` directory. The `@/*` alias maps to `./*` in `tsconfig.json`. Do not introduce a monorepo, microservices or containers until justified by actual workflows.
 
 Existing source folders are `app/`, `components/`, `core/media/`, `features/media/`, `types/`, `platform/`, and `electron/` (including `electron/ipc/`). Workspace features also live in `features/editor/`, `features/preview/`, `features/inspector/`, `features/scenes/`, and `features/timeline/`; the reusable divider lives in `components/ui/`. Global styles and design tokens live in `app/globals.css`. The home route composes `features/editor/editor-workspace.tsx`; `components/electron-test.tsx` remains available as a diagnostic component. The tree below also includes planned folders as ownership conventions.
@@ -60,15 +63,18 @@ motion-craft/
 Directories describe intended ownership, not a request to create dozens of empty folders. Create them as features are implemented. Prefer colocated tests (`*.test.ts`) for pure logic.
 
 ## Dependency direction
+
 UI features -> `core` and `platform/contracts`; platform adapters -> Electron preload bridge; rendering adapters -> `core`. `core` must never import Next.js, Electron or Remotion. Electron main must not import browser-only UI code.
 
 ## Runtime cautions
+
 - Current Electron integration loads the Next.js dev server; production runtime is an open design task. Never claim packaging works until a packaged build is tested.
 - Renderer process must not access Node filesystem directly. Validate IPC calls and restrict origins/navigation.
 - Remotion preview and final render should share canonical scene data, but be separate execution paths.
 - Desktop persistence can start with local project JSON; add PostgreSQL later for justified indexing and relational workflows.
 
 ## Implemented development foundation
+
 - `platform/app.ts` owns the typed bridge contract and version adapter; `platform/media.ts` validates media IPC responses and provides browser/server fallbacks. `platform/projects.ts` validates project open/save/activate/relink IPC. Nested adapter folders are deferred until needed.
 - `electron/security.cjs` restricts navigation to `http://localhost:3000` and validates IPC sender identity, owning main frame and origin. The version endpoint accepts no arguments; media endpoints additionally use strict Zod argument and response contracts.
 - Main process denies popups and webviews. Permission requests/checks allow only fullscreen from a trusted app main frame in an owned window; camera, microphone, screen capture, filesystem, clipboard and other permissions remain denied. Context isolation and sandboxing are enabled; renderer Node integration is disabled. Preload exposes only `getAppVersion` and approved `media`/`projects` methods, never raw IPC or filesystem access.
@@ -104,3 +110,9 @@ The main-process registry survives renderer reloads and ends when Electron exits
 `electron/project-store.cjs` writes project JSON and trusted asset binding catalogs atomically. Catalogs are under `app.getPath('userData')/project-media/<projectId>.media.json`, never inside renderer-facing project JSON. They contain only paths previously approved by native media selection/relinking. Open never interprets a JSON filename as a filesystem path. Missing/changed media remains declared and unavailable until explicitly relinked.
 
 `electron/ipc/projects.cjs` uses strict argument tuples and existing sender/window/main-frame/origin checks. Opening stages a candidate; activation after user confirmation changes the save target. Reload clears that target and invalidates pending operations. Save/cancel errors retain current editing data; only exact selected paths or the active native-selected save target can be written. Native close/reload warnings are triggered by the dirty renderer's beforeunload handler. See [Project format and timing](PROJECT_FORMAT.md).
+
+## Quality and recovery boundaries
+
+ESLint prevents Node built-in/Electron imports in renderer, platform and core runtime modules (tests are excluded). Type-only imports and explicit-any restrictions apply to TypeScript. Shared CJS remains supported; the editor reducer is now checked with typed JSDoc and an exhaustive action switch. Remaining unchecked shared domain CJS is tracked debt rather than falsely covered by TypeScript strict mode.
+
+`app/error.tsx` uses this installed Next.js version's `retry` and `unknown` error contract, logs technical errors separately and explains that retry may reset unsaved in-memory edits. It does not implement autosave or crash recovery. Unreadable existing media catalogs block saves instead of being silently replaced; project loading can still degrade to unavailable media. Dirty comparison is memoized on document/checkpoint identity so transient preview updates do not repeatedly validate and serialize an unchanged project.

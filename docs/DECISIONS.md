@@ -1,25 +1,29 @@
 # Architecture decision log
 
-| Date | Decision | Rationale | Status |
-|---|---|---|---|
-| 2026-11-04 | Next.js + TypeScript for UI | Existing experience and potential web reuse | Confirmed |
-| 2026-11-04 | Root-level source directories with `@/*` mapped to `./*` | Match the existing `app/`, `components/`, and `types/` layout; create feature folders as needed | Confirmed |
-| 2026-11-04 | Electron for Windows desktop | Native dialogs/filesystem through secure bridge | Confirmed |
-| 2026-11-04 | Remotion + FFmpeg for video | React compositions and local encoding | Planned |
-| 2026-11-04 | Modular monolith initially | Avoid premature distributed infrastructure | Recommended |
-| 2026-11-04 | Local JSON persistence before DB | Simplify early usable editor | Recommended; revisit |
-| 2026-11-04 | Minimal platform adapter and main-frame/origin-validated IPC | Keep UI independent of desktop runtime and restrict native access without new dependencies | Implemented for development |
-| 2026-11-04 | Main-process media registry with opaque custom-protocol asset URLs | Keep original paths out of React, support range playback without broad filesystem APIs or media copies | Implemented for Phase 2 |
-| 2026-11-04 | Shared Zod media contracts and React hook state | Validate IPC in both runtimes; avoid a state-management dependency for one feature | Implemented for Phase 2 |
-| 2026-11-04 | Session-only media metadata using Chromium decoders | Deliver import/preview before project persistence or FFmpeg integration; codec limitations remain explicit | Implemented for Phase 2 |
-| 2026-11-04 | Editor reducer composed with one media hook | Share selection and transient workspace state without a global store or duplicate imported assets | Implemented for Phase 2.2 |
-| 2026-11-04 | Native pointer-capture dividers and validated preferences | Three fixed dividers need bounded resizing and keyboard support without another dependency; persist dimensions only | Implemented for Phase 2.2 |
-| 2026-11-04 | Source preview separate from the timeline marker | Avoid implying composition playback before scene/layer models and Remotion exist | Implemented for Phase 2.2 |
-| 2026-11-04 | Fullscreen permission limited to trusted main frames in owned windows | Enable source monitor fullscreen while retaining denial for other permissions | Implemented and tested |
-| 2026-11-04 | Strict schema v1 shared by Electron and renderer with inferred TS types | One validation contract, bounded JSON, explicit supported styles/properties and no executable payloads | Implemented for Phase 3 |
-| 2026-11-04 | Contiguous scene order and scene-relative layer times; derived layer clips | Atomic scene operations prevent conflicting timing; standalone asset clips retain global timing | Implemented and validated |
-| 2026-11-04 | Portable path-free project JSON plus per-user trusted media catalogs | Persist editing data without granting filesystem access from imported JSON; relink by native selection | Implemented and tested |
-| 2026-11-04 | Bounded snapshot history and serialized save checkpoints | Predictable undo/redo and dirty tracking; transient UI excluded | Implemented for Phase 3 |
-| 2026-11-04 | Staged open/import confirmation and native unload warning | Replacement and canceled file dialogs must not discard edits or change save destinations | Implemented and tested |
+| Date       | Decision                                                                   | Rationale                                                                                                           | Status                            |
+| ---------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| 2026-11-04 | Next.js + TypeScript for UI                                                | Existing experience and potential web reuse                                                                         | Confirmed                         |
+| 2026-11-04 | Root-level source directories with `@/*` mapped to `./*`                   | Match the existing `app/`, `components/`, and `types/` layout; create feature folders as needed                     | Confirmed                         |
+| 2026-11-04 | Electron for Windows desktop                                               | Native dialogs/filesystem through secure bridge                                                                     | Confirmed                         |
+| 2026-11-04 | Remotion + FFmpeg for video                                                | React compositions and local encoding                                                                               | Planned                           |
+| 2026-11-04 | Modular monolith initially                                                 | Avoid premature distributed infrastructure                                                                          | Recommended                       |
+| 2026-11-04 | Local JSON persistence before DB                                           | Simplify early usable editor                                                                                        | Recommended; revisit              |
+| 2026-11-04 | Minimal platform adapter and main-frame/origin-validated IPC               | Keep UI independent of desktop runtime and restrict native access without new dependencies                          | Implemented for development       |
+| 2026-11-04 | Main-process media registry with opaque custom-protocol asset URLs         | Keep original paths out of React, support range playback without broad filesystem APIs or media copies              | Implemented for Phase 2           |
+| 2026-11-04 | Shared Zod media contracts and React hook state                            | Validate IPC in both runtimes; avoid a state-management dependency for one feature                                  | Implemented for Phase 2           |
+| 2026-11-04 | Session-only media metadata using Chromium decoders                        | Deliver import/preview before project persistence or FFmpeg integration; codec limitations remain explicit          | Implemented for Phase 2           |
+| 2026-11-04 | Editor reducer composed with one media hook                                | Share selection and transient workspace state without a global store or duplicate imported assets                   | Implemented for Phase 2.2         |
+| 2026-11-04 | Native pointer-capture dividers and validated preferences                  | Three fixed dividers need bounded resizing and keyboard support without another dependency; persist dimensions only | Implemented for Phase 2.2         |
+| 2026-11-04 | Source preview separate from the timeline marker                           | Avoid implying composition playback before scene/layer models and Remotion exist                                    | Implemented for Phase 2.2         |
+| 2026-11-04 | Fullscreen permission limited to trusted main frames in owned windows      | Enable source monitor fullscreen while retaining denial for other permissions                                       | Implemented and tested            |
+| 2026-11-04 | Strict schema v1 shared by Electron and renderer with inferred TS types    | One validation contract, bounded JSON, explicit supported styles/properties and no executable payloads              | Implemented for Phase 3           |
+| 2026-11-04 | Contiguous scene order and scene-relative layer times; derived layer clips | Atomic scene operations prevent conflicting timing; standalone asset clips retain global timing                     | Implemented and validated         |
+| 2026-11-04 | Portable path-free project JSON plus per-user trusted media catalogs       | Persist editing data without granting filesystem access from imported JSON; relink by native selection              | Implemented and tested            |
+| 2026-11-04 | Bounded snapshot history and serialized save checkpoints                   | Predictable undo/redo and dirty tracking; transient UI excluded                                                     | Implemented for Phase 3           |
+| 2026-11-04 | Staged open/import confirmation and native unload warning                  | Replacement and canceled file dialogs must not discard edits or change save destinations                            | Implemented and tested            |
+| 2026-11-04 | Permanent engineering standards discoverable from AGENTS.md                | Preserve Phase 3 invariants and require scoped validation, tests and dependency review in future sessions           | Adopted                           |
+| 2026-11-04 | Pinned Prettier with touched-file adoption and LF policy                   | Consistent formatting without a disruptive repository-wide rewrite during Phase 3                                   | Implemented                       |
+| 2026-11-04 | Keep existing React state, schema v1 timing and Node tests                 | Zustand/forms/query/test libraries remain conditional; no speculative migrations or Phase 4 work                    | Confirmed                         |
+| 2026-11-04 | Fail saves on unreadable existing media catalogs                           | Preserve approved bindings and prior saved data instead of treating corruption as an empty catalog                  | Implemented and regression-tested |
 
 Add dated entries when making or changing significant technical decisions.
