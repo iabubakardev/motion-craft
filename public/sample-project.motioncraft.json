@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "id": "04043b03-03e2-43b5-8aaf-36fb5a848ab3",
+  "name": "MotionCraft sample",
+  "createdAt": "2026-11-04T08:09:59.602Z",
+  "updatedAt": "2026-11-04T08:09:59.619Z",
+  "resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "fps": 30,
+  "aspectRatio": "16:9",
+  "duration": 8,
+  "stylePreset": "default",
+  "assets": [
+    {
+      "id": "e9e1b089-a1ae-49ad-b6bf-5b686d2c5f27",
+      "filename": "sample-image.png",
+      "type": "image",
+      "mimeType": "image/png",
+      "size": 1024,
+      "importedAt": "2026-11-04T08:09:59.607Z",
+      "width": 1920,
+      "height": 1080
+    }
+  ],
+  "scenes": [
+    {
+      "id": "3aff66dd-7097-4343-976e-c6e08795a9f7",
+      "name": "Opening",
+      "start": 0,
+      "duration": 5,
+      "narration": "A manually editable opening scene.",
+      "stylePreset": "default",
+      "layers": [
+        {
+          "id": "d983c0e8-7f6e-4686-83b0-aaab02a14d39",
+          "trackId": "23c3067b-d283-4fae-b070-2326349a5efe",
+          "start": 0,
+          "duration": 5,
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "zIndex": 0,
+          "animation": {
+            "preset": "none",
+            "duration": 0
+          },
+          "type": "image",
+          "assetId": "e9e1b089-a1ae-49ad-b6bf-5b686d2c5f27",
+          "properties": {
+            "fit": "contain"
+          }
+        },
+        {
+          "id": "459b9d6d-bcd0-4977-bf67-81c86e1f8b8e",
+          "trackId": "1c35c2d7-9413-4303-b0a1-9e22cc57212a",
+          "start": 0,
+          "duration": 5,
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "zIndex": 1,
+          "animation": {
+            "preset": "none",
+            "duration": 0
+          },
+          "type": "text",
+          "properties": {
+            "text": "New text",
+            "fontSize": 48,
+            "fontFamily": "system",
+            "color": "#ffffff"
+          }
+        }
+      ],
+      "transitionIn": {
+        "type": "none",
+        "duration": 0
+      },
+      "transitionOut": {
+        "type": "none",
+        "duration": 0
+      },
+      "metadata": {
+        "notes": "",
+        "tags": []
+      }
+    },
+    {
+      "id": "a2484e49-d2a3-4338-b321-312b9e5143da",
+      "name": "Closing",
+      "start": 5,
+      "duration": 3,
+      "narration": "",
+      "stylePreset": "default",
+      "layers": [
+        {
+          "id": "d2763ae2-ae7c-46b3-a226-b0287b2ac874",
+          "trackId": "23c3067b-d283-4fae-b070-2326349a5efe",
+          "start": 0,
+          "duration": 3,
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "zIndex": 0,
+          "animation": {
+            "preset": "none",
+            "duration": 0
+          },
+          "type": "shape",
+          "properties": {
+            "shape": "rectangle",
+            "fill": "#42c8dd",
+            "stroke": "#42c8dd",
+            "strokeWidth": 0
+          }
+        }
+      ],
+      "transitionIn": {
+        "type": "none",
+        "duration": 0
+      },
+      "transitionOut": {
+        "type": "none",
+        "duration": 0
+      },
+      "metadata": {
+        "notes": "",
+        "tags": []
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "c37b6e29-1578-4a1a-afb5-8c2d48571d00",
+      "name": "V4",
+      "type": "video",
+      "order": 0,
+      "clips": []
+    },
+    {
+      "id": "e93ec02e-009d-4fd5-b412-83496c28f3d9",
+      "name": "V3",
+      "type": "video",
+      "order": 1,
+      "clips": []
+    },
+    {
+      "id": "1c35c2d7-9413-4303-b0a1-9e22cc57212a",
+      "name": "V2",
+      "type": "video",
+      "order": 2,
+      "clips": [
+        {
+          "id": "459b9d6d-bcd0-4977-bf67-81c86e1f8b8e",
+          "layerId": "459b9d6d-bcd0-4977-bf67-81c86e1f8b8e",
+          "trackId": "1c35c2d7-9413-4303-b0a1-9e22cc57212a",
+          "start": 0,
+          "duration": 5,
+          "sourceStart": 0,
+          "sourceEnd": 5
+        }
+      ]
+    },
+    {
+      "id": "23c3067b-d283-4fae-b070-2326349a5efe",
+      "name": "V1",
+      "type": "video",
+      "order": 3,
+      "clips": [
+        {
+          "id": "d983c0e8-7f6e-4686-83b0-aaab02a14d39",
+          "layerId": "d983c0e8-7f6e-4686-83b0-aaab02a14d39",
+          "trackId": "23c3067b-d283-4fae-b070-2326349a5efe",
+          "start": 0,
+          "duration": 5,
+          "sourceStart": 0,
+          "sourceEnd": 5
+        },
+        {
+          "id": "d2763ae2-ae7c-46b3-a226-b0287b2ac874",
+          "layerId": "d2763ae2-ae7c-46b3-a226-b0287b2ac874",
+          "trackId": "23c3067b-d283-4fae-b070-2326349a5efe",
+          "start": 5,
+          "duration": 3,
+          "sourceStart": 0,
+          "sourceEnd": 3
+        }
+      ]
+    },
+    {
+      "id": "cb9a6bce-4446-4975-9277-1a597efb4ef8",
+      "name": "A1",
+      "type": "audio",
+      "order": 4,
+      "clips": []
+    },
+    {
+      "id": "2ac4a6d8-d5e6-4436-b9d9-43bba31248ff",
+      "name": "A2",
+      "type": "audio",
+      "order": 5,
+      "clips": []
+    },
+    {
+      "id": "f6374917-f107-405d-8d82-0d78587e38fe",
+      "name": "A3",
+      "type": "audio",
+      "order": 6,
+      "clips": []
+    }
+  ],
+  "settings": {
+    "backgroundColor": "#11151c",
+    "audioSampleRate": 48000,
+    "snapToFrames": true
+  }
+}

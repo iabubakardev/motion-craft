@@ -1,9 +1,9 @@
-import ElectronTest from "@/components/electron-test";
+import EditorWorkspace from "@/features/editor/editor-workspace";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-950 px-6 py-16 text-zinc-100">
-      <ElectronTest />
+    <main className="flex flex-1 flex-col">
+      <EditorWorkspace />
     </main>
   );
 }

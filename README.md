@@ -2,7 +2,7 @@
 
 **A local-first, AI-assisted desktop video editor for Windows.**
 
-> 🚧 Early development — the editor, AI pipeline and video export are planned features, not yet released.
+> Early development: the workspace and project foundation work; composition playback, AI and video export are not released.
 
 MotionCraft aims to combine hands-on timeline editing with optional AI-assisted scene planning, asset matching and captions. The product is designed to work with your own media, without requiring paid cloud APIs.
 
@@ -17,7 +17,7 @@ MotionCraft aims to combine hands-on timeline editing with optional AI-assisted 
 
 ## Current status
 
-The Next.js development app runs. Electron development preload IPC and renderer isolation have passed an automated desktop smoke test. The full video editor and rendering pipeline are not yet implemented.
+MotionCraft now has a versioned project model, scene/layer editing, JSON import/export, native local save/open, missing-media relinking and undo/redo, integrated with the resizable workspace and original-source preview. Composition playback, timeline drag-and-drop/trimming, AI and video rendering remain future work.
 
 See [Roadmap](docs/ROADMAP.md) for checked milestones.
 
@@ -61,13 +61,42 @@ npm test
 
 With `npm run dev` already running, use `npm run test:desktop` for a real Electron preload/IPC smoke test. It opens a temporary app window and exits automatically. Use `npm run electron:dev` to open Electron against that existing server, or `npm run dev:desktop` to start both from scratch. Development is fixed to `http://localhost:3000`.
 
+Run `npm run test:media` against that server to exercise media import, image decoding, video/audio playback, search/filter/list interactions, duplicates, cancellation and reload recovery in Electron. It creates and removes temporary fixtures and substitutes native dialog results; interaction with the Windows file picker still requires a manual check. A screenshot is saved to `.next/media-library-smoke.png`.
+
 If your terminal inherits `ELECTRON_RUN_AS_NODE=1`, clear it before launching Electron (PowerShell: `$env:ELECTRON_RUN_AS_NODE = $null`). Otherwise Electron runs as Node instead of opening the desktop app.
+
+Run `npm run test:projects` against the running dev server to exercise real scene/layer UI, JSON paste/upload/export, replacement confirmation, save/open round trips, relinking, history and unsaved-change protection. Native dialog responses are stubbed and project files/profile are isolated under `.next`. A screenshot is saved to `.next/project-workspace-smoke.png`.
+
+The media integration suite also verifies workspace tabs and inspector, keyboard shortcuts and text-input protection, pointer/keyboard resizing, layout persistence, minimum desktop size, timeline zoom/scroll/marker, session settings and fullscreen. See [Workspace behavior and verification](docs/EDITOR_WORKSPACE.md).
 
 ## Architecture
 
-Source directories live at the repository root: `app/`, `components/`, and `types/`. The `@/*` import alias maps to that root. Add future feature and domain folders alongside them as needed.
+Source directories live at the repository root. Media contracts live in `core/media/`, React UI/state in `features/media/`, desktop adapters in `platform/`, and native selection/streaming in `electron/`. The `@/*` import alias maps to that root.
 
-The UI lives in Next.js, desktop capabilities are exposed via a secure Electron preload bridge, and framework-independent editing logic belongs in `core/` (planned). See [Architecture](docs/ARCHITECTURE.md) and [Project Context](docs/PROJECT_CONTEXT.md).
+The UI lives in Next.js, desktop capabilities are exposed via a secure Electron preload bridge, and framework-independent domain logic belongs in `core/`. See [Architecture](docs/ARCHITECTURE.md), [Media import and testing](docs/MEDIA_IMPORT.md), and [Project Context](docs/PROJECT_CONTEXT.md).
+
+## Using the media library
+
+In the Electron window, click **Import media** and select multiple MP4, MOV, WebM, MP3, WAV, PNG, JPG/JPEG, or WebP files. Select a card to preview it, search by filename, or choose a type filter. Video/audio codec support depends on Electron/Chromium; unsupported or corrupted files display an unavailable state.
+
+Imports reference originals without copying them. Duplicate paths retain asset IDs. Save a project to keep its asset descriptors and editing data; desktop path bindings are stored separately in trusted app data. Missing/moved files stay declared and can be relinked while preserving IDs. The browser supports JSON import/export with local media unavailable. No dependencies were added for Phase 3; existing Zod validates project and IPC contracts.
+
+## Using the workspace
+
+- Switch between Media, Scenes and Audio without losing the media session. Add, rename, duplicate, delete, reorder and retime scenes. Deletion asks for confirmation; shortening cannot silently cut off layers.
+- Select media to preview it in the 16:9 source monitor and inspect its metadata. Use play/pause, seek, mute or fullscreen. This plays the original source, not a composition.
+- Drag the sidebar, inspector or timeline divider, or use arrow keys on a focused divider. Double-click or press Home to reset that divider. Reset workspace layout restores all defaults. Only panel dimensions are stored locally.
+- Space toggles a playable source, Escape exits fullscreen or clears selection, and Ctrl+O imports media. Text fields and focused interactive controls retain their keyboard behavior.
+- The timeline displays actual scenes and validated layer clips with a marker, scrolling and zoom. Add media/text/shape/caption layers through the inspector. Drag-and-drop, trimming and composition playback are not implemented.
+- Project settings, scene narration/style and layer transform/timing/text controls update the project document. Undo/redo covers project edits. Transform data is not composited in the source monitor. The video Export button stays disabled; Export JSON is functional.
+
+## Saving and importing projects
+
+Use Save project / Save as to write `.motioncraft.json` through Electron native dialogs. Open project validates a file and shows a summary before replacement. Import JSON accepts pasted or uploaded schema v1 JSON and also requires replacement confirmation; Export JSON downloads the validated, path-free document. Ctrl+S saves and Ctrl+Z / Ctrl+Shift+Z undo/redo outside text inputs. Ctrl+O continues to import media.
+
+Unsaved edits are tracked. New/open/import replacement explicitly warns before discarding them; closing or reloading a dirty desktop document asks whether to keep editing or discard. There is no autosave or crash recovery. Always save before exiting. A reload starts a new unsaved document and clears the previous save target.
+
+See [Project JSON format, timing and persistence](docs/PROJECT_FORMAT.md) and [sample project](public/sample-project.motioncraft.json). The sample deliberately references a missing image so relinking can be tested; no media is embedded. Copying project JSON to another machine requires relinking media because local paths are never included.
 
 ## Roadmap
 
@@ -75,7 +104,7 @@ See [Development roadmap](docs/ROADMAP.md). Planned milestones include the edito
 
 ## Screenshots / demo
 
-Screenshots and a demo will be added when the editor UI is implemented. Do not treat mockups as working features.
+`npm run test:media` generates `.next/media-library-smoke.png` from the real workspace using temporary test assets. This is a development verification artifact, not a rendered composition.
 
 ## Contributing
 

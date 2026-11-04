@@ -18,6 +18,6 @@ MotionCraft is a local-first AI-assisted Windows desktop video editor, not merel
 - Validate all AI/external inputs; human review of factual claims.
 
 ## Current status
-Next.js dev app and Electron development preload IPC have been verified with an HTTP check and a real Electron smoke test. The renderer uses a typed platform adapter with a browser fallback. Production Electron packaging/runtime is not yet implemented. Remotion, FFmpeg, project persistence and the editor UI remain planned.
+Next.js/Electron development and the resizable workspace are verified. Phase 3 adds strict schema v1 project documents, scene/layer management, real timeline data, snapshot history, JSON paste/upload/export, confirmed replacement, native save/open and trusted missing-media relinking. The source monitor still previews original files, not compositions. Native dialog responses are substituted in automated tests; actual Windows picker interaction and representative codecs remain manual checks. No dependencies were added. Project files contain IDs/metadata while native path bindings stay in trusted app data. Composition rendering, advanced timeline editing, autosave/crash recovery, AI and packaged production runtime are not implemented.
 
 For full requirements consult `MotionCraft_Project_Handoff.md` when present in the repository or conversation.

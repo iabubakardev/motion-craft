@@ -9,17 +9,26 @@ function isTrustedURL(value) {
   }
 }
 
-function validateVersionRequest(event, webContents, args) {
+function validateRequest(event, webContents) {
   if (
     !webContents ||
     event.sender !== webContents ||
     !event.senderFrame ||
     event.senderFrame !== webContents.mainFrame ||
-    !isTrustedURL(event.senderFrame.url) ||
-    args.length !== 0
+    !isTrustedURL(event.senderFrame.url)
   ) {
-    throw new Error("Unauthorized app:getVersion request");
+    throw new Error("Unauthorized IPC request");
   }
 }
 
-module.exports = { DEV_URL, isTrustedURL, validateVersionRequest };
+function validateVersionRequest(event, webContents, args) {
+  validateRequest(event, webContents);
+  if (args.length !== 0) throw new Error("Unexpected app:getVersion arguments");
+}
+
+function canUseFullscreen(permission, windowURL, details) {
+  return permission === "fullscreen" && details?.isMainFrame === true &&
+    isTrustedURL(windowURL) && isTrustedURL(details.requestingUrl);
+}
+
+module.exports = { DEV_URL, isTrustedURL, validateRequest, validateVersionRequest, canUseFullscreen };

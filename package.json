@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "main": "electron/main.cjs",
-
   "scripts": {
     "dev": "next dev --hostname localhost --port 3000",
     "build": "next build",
@@ -12,13 +11,16 @@
     "electron:dev": "wait-on --timeout 60000 http-get://localhost:3000 && electron .",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --test electron/security.test.cjs",
-    "test:desktop": "electron electron/smoke.cjs"
+    "test": "node --test core/project/project.test.cjs electron/security.test.cjs electron/media-library.test.cjs electron/project-store.test.cjs electron/ipc/media.test.cjs electron/ipc/projects.test.cjs features/media/library.test.cjs features/editor/editor-state.test.cjs",
+    "test:desktop": "electron electron/smoke.cjs",
+    "test:media": "electron electron/media-smoke.cjs",
+    "test:projects": "electron electron/project-smoke.cjs"
   },
   "dependencies": {
     "next": "16.4.5",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

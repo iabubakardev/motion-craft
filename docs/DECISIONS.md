@@ -8,7 +8,18 @@
 | 2026-11-04 | Remotion + FFmpeg for video | React compositions and local encoding | Planned |
 | 2026-11-04 | Modular monolith initially | Avoid premature distributed infrastructure | Recommended |
 | 2026-11-04 | Local JSON persistence before DB | Simplify early usable editor | Recommended; revisit |
-
 | 2026-11-04 | Minimal platform adapter and main-frame/origin-validated IPC | Keep UI independent of desktop runtime and restrict native access without new dependencies | Implemented for development |
+| 2026-11-04 | Main-process media registry with opaque custom-protocol asset URLs | Keep original paths out of React, support range playback without broad filesystem APIs or media copies | Implemented for Phase 2 |
+| 2026-11-04 | Shared Zod media contracts and React hook state | Validate IPC in both runtimes; avoid a state-management dependency for one feature | Implemented for Phase 2 |
+| 2026-11-04 | Session-only media metadata using Chromium decoders | Deliver import/preview before project persistence or FFmpeg integration; codec limitations remain explicit | Implemented for Phase 2 |
+| 2026-11-04 | Editor reducer composed with one media hook | Share selection and transient workspace state without a global store or duplicate imported assets | Implemented for Phase 2.2 |
+| 2026-11-04 | Native pointer-capture dividers and validated preferences | Three fixed dividers need bounded resizing and keyboard support without another dependency; persist dimensions only | Implemented for Phase 2.2 |
+| 2026-11-04 | Source preview separate from the timeline marker | Avoid implying composition playback before scene/layer models and Remotion exist | Implemented for Phase 2.2 |
+| 2026-11-04 | Fullscreen permission limited to trusted main frames in owned windows | Enable source monitor fullscreen while retaining denial for other permissions | Implemented and tested |
+| 2026-11-04 | Strict schema v1 shared by Electron and renderer with inferred TS types | One validation contract, bounded JSON, explicit supported styles/properties and no executable payloads | Implemented for Phase 3 |
+| 2026-11-04 | Contiguous scene order and scene-relative layer times; derived layer clips | Atomic scene operations prevent conflicting timing; standalone asset clips retain global timing | Implemented and validated |
+| 2026-11-04 | Portable path-free project JSON plus per-user trusted media catalogs | Persist editing data without granting filesystem access from imported JSON; relink by native selection | Implemented and tested |
+| 2026-11-04 | Bounded snapshot history and serialized save checkpoints | Predictable undo/redo and dirty tracking; transient UI excluded | Implemented for Phase 3 |
+| 2026-11-04 | Staged open/import confirmation and native unload warning | Replacement and canceled file dialogs must not discard edits or change save destinations | Implemented and tested |
 
 Add dated entries when making or changing significant technical decisions.

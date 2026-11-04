@@ -1,6 +1,14 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, protocol, dialog } = require("electron");
 const path = require("node:path");
-const { DEV_URL, isTrustedURL, validateVersionRequest } = require("./security.cjs");
+const { DEV_URL, isTrustedURL, validateVersionRequest, canUseFullscreen } = require("./security.cjs");
+const { createMediaLibrary } = require("./media-library.cjs");
+const { registerMediaIPC } = require("./ipc/media.cjs");
+const { registerProjectIPC } = require("./ipc/projects.cjs");
+
+protocol.registerSchemesAsPrivileged([{
+  scheme: "motioncraft-media",
+  privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true },
+}]);
 
 const isDev = !app.isPackaged;
 
@@ -34,6 +42,14 @@ function createWindow() {
     if (!isTrustedURL(event.url)) event.preventDefault();
   });
   mainWindow.webContents.on("will-attach-webview", (event) => event.preventDefault());
+  mainWindow.webContents.on("will-prevent-unload", (event) => {
+    const choice = dialog.showMessageBoxSync(mainWindow, {
+      type: "warning", title: "Unsaved project changes", message: "Discard unsaved project changes?",
+      detail: "Save your MotionCraft project before closing or reloading to keep these edits.",
+      buttons: ["Keep editing", "Discard changes"], defaultId: 0, cancelId: 0,
+    });
+    if (choice === 1) event.preventDefault();
+  });
 
   if (isDev) {
     mainWindow.loadURL(DEV_URL).catch((error) => {
@@ -48,8 +64,18 @@ function createWindow() {
 
 app.whenReady().then(() => {
   const { session } = require("electron");
-  session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-  session.defaultSession.setPermissionCheckHandler(() => false);
+  session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
+    callback(!!BrowserWindow.fromWebContents(contents) && canUseFullscreen(permission, contents.getURL(), details));
+  });
+  session.defaultSession.setPermissionCheckHandler((contents, permission, requestingOrigin, details) => {
+    return !!contents && !!BrowserWindow.fromWebContents(contents) && canUseFullscreen(permission, contents.getURL(), {
+      ...details, requestingUrl: details.requestingUrl || requestingOrigin,
+    });
+  });
+  const mediaLibrary = createMediaLibrary();
+  protocol.handle("motioncraft-media", (request) => mediaLibrary.respond(request));
+  registerMediaIPC(mediaLibrary);
+  registerProjectIPC(mediaLibrary);
   ipcMain.handle("app:getVersion", (event, ...args) => {
     const window = BrowserWindow.fromWebContents(event.sender);
     validateVersionRequest(event, window?.webContents, args);
