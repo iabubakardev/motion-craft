@@ -1,9 +1,7 @@
-export {};
+import type { DesktopBridge } from "@/platform/app";
 
 declare global {
   interface Window {
-    motioncraft?: {
-      getAppVersion: () => Promise<string>;
-    };
+    motioncraft?: DesktopBridge;
   }
 }

@@ -9,4 +9,6 @@
 | 2026-11-04 | Modular monolith initially | Avoid premature distributed infrastructure | Recommended |
 | 2026-11-04 | Local JSON persistence before DB | Simplify early usable editor | Recommended; revisit |
 
+| 2026-11-04 | Minimal platform adapter and main-frame/origin-validated IPC | Keep UI independent of desktop runtime and restrict native access without new dependencies | Implemented for development |
+
 Add dated entries when making or changing significant technical decisions.

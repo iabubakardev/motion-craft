@@ -3,7 +3,7 @@
 ## Current approach
 Single Next.js application with Electron shell and modular feature folders. Source directories live at the repository root; there is no `src/` directory. The `@/*` alias maps to `./*` in `tsconfig.json`. Do not introduce a monorepo, microservices or containers until justified by actual workflows.
 
-Existing source folders are `app/`, `components/`, `types/`, and `electron/`. Global styles currently live in `app/globals.css`, and the Electron smoke-test component lives in `components/electron-test.tsx`. The tree below includes planned folders as ownership conventions.
+Existing source folders are `app/`, `components/`, `types/`, `platform/`, and `electron/`. Global styles currently live in `app/globals.css`, and the Electron smoke-test component lives in `components/electron-test.tsx`. The tree below includes planned folders as ownership conventions.
 
 ```text
 motion-craft/
@@ -67,3 +67,12 @@ UI features -> `core` and `platform/contracts`; platform adapters -> Electron pr
 - Renderer process must not access Node filesystem directly. Validate IPC calls and restrict origins/navigation.
 - Remotion preview and final render should share canonical scene data, but be separate execution paths.
 - Desktop persistence can start with local project JSON; add PostgreSQL later for justified indexing and relational workflows.
+
+## Implemented development foundation
+- `platform/app.ts` owns the typed bridge contract, version response validation, and browser/server fallback (`null` when unavailable). Additional adapters and contracts folders are deferred until there are more capabilities.
+- `electron/security.cjs` restricts navigation to `http://localhost:3000` and validates IPC sender identity, owning main frame, origin, and zero arguments. This endpoint has no JSON payload; add Zod when structured input is introduced.
+- Main process denies popups, webviews and permission requests/checks. Context isolation and sandboxing are enabled; renderer Node integration is disabled. Preload exposes only `getAppVersion`, never raw IPC.
+- Development uses a fixed localhost port and bounded readiness wait. Closing Electron stops the paired dev server. The existing dev server must be stopped before starting `dev:desktop`; `electron:dev` can attach to it.
+- `electron/security.test.cjs` covers origin and IPC rejection cases. `electron/smoke.cjs` verifies the real main/preload round trip and renderer security preferences against the running dev server.
+- Missing later foundations: versioned project schema, editing commands, persistence, media handling, Remotion/FFmpeg integration and production runtime/packaging. No empty feature directories are created.
+- Production content security policy and packaged-origin validation remain required before release. Development currently uses Next.js development scripts/HMR and Google-hosted fonts; offline font bundling is also pending.

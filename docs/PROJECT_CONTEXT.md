@@ -18,6 +18,6 @@ MotionCraft is a local-first AI-assisted Windows desktop video editor, not merel
 - Validate all AI/external inputs; human review of factual claims.
 
 ## Current status
-Next.js dev app is running. Electron integration was provided as a development-only setup; verify it actually works before claiming completion. Production Electron packaging/runtime is not yet implemented.
+Next.js dev app and Electron development preload IPC have been verified with an HTTP check and a real Electron smoke test. The renderer uses a typed platform adapter with a browser fallback. Production Electron packaging/runtime is not yet implemented. Remotion, FFmpeg, project persistence and the editor UI remain planned.
 
 For full requirements consult `MotionCraft_Project_Handoff.md` when present in the repository or conversation.

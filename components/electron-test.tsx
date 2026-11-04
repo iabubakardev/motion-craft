@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getAppVersion } from "@/platform/app";
 
 type TestResult =
   | { status: "idle" | "loading" | "unavailable" }
@@ -13,14 +14,10 @@ export default function ElectronTest() {
   async function testConnection() {
     setResult({ status: "loading" });
     try {
-      const bridge = window.motioncraft;
-      if (!bridge) {
+      const version = await getAppVersion();
+      if (version === null) {
         setResult({ status: "unavailable" });
         return;
-      }
-      const version = await bridge.getAppVersion();
-      if (typeof version !== "string" || !version.trim()) {
-        throw new Error("The main process returned an invalid app version.");
       }
       setResult({ status: "success", version });
     } catch (error) {

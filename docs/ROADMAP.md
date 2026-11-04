@@ -1,7 +1,7 @@
 # MotionCraft roadmap
 
 - [x] Next.js application created and running (user confirmed)
-- [ ] Electron dev window and secure preload IPC verified
+- [x] Electron dev window and secure preload IPC verified (automated desktop smoke test)
 - [ ] Editor shell: media library, preview, timeline, scenes, inspector
 - [ ] Versioned project/scene/track/asset schema with Zod
 - [ ] JSON import/export with useful validation errors

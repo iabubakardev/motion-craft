@@ -17,7 +17,7 @@ MotionCraft aims to combine hands-on timeline editing with optional AI-assisted 
 
 ## Current status
 
-The Next.js development app runs. Electron development integration is in progress. The full video editor and rendering pipeline are not yet implemented.
+The Next.js development app runs. Electron development preload IPC and renderer isolation have passed an automated desktop smoke test. The full video editor and rendering pipeline are not yet implemented.
 
 See [Roadmap](docs/ROADMAP.md) for checked milestones.
 
@@ -26,7 +26,7 @@ See [Roadmap](docs/ROADMAP.md) for checked milestones.
 | Layer | Technology | Status |
 |---|---|---|
 | UI | Next.js, React, TypeScript, Tailwind | Foundation |
-| Desktop shell | Electron | Integration in progress |
+| Desktop shell | Electron | Development verified; packaging pending |
 | Composition | Remotion | Planned |
 | Processing | FFmpeg | Planned |
 | Local AI | Ollama, faster-whisper | Planned |
@@ -50,6 +50,18 @@ npm run dev:desktop
 ```
 
 **Note:** This repository does not yet provide a tested packaged Windows installer. `dev:desktop` is a development workflow only.
+
+## Verification
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+```
+
+With `npm run dev` already running, use `npm run test:desktop` for a real Electron preload/IPC smoke test. It opens a temporary app window and exits automatically. Use `npm run electron:dev` to open Electron against that existing server, or `npm run dev:desktop` to start both from scratch. Development is fixed to `http://localhost:3000`.
+
+If your terminal inherits `ELECTRON_RUN_AS_NODE=1`, clear it before launching Electron (PowerShell: `$env:ELECTRON_RUN_AS_NODE = $null`). Otherwise Electron runs as Node instead of opening the desktop app.
 
 ## Architecture
 
