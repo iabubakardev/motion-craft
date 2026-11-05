@@ -323,7 +323,7 @@ app.once("browser-window-created", (_event, window) => {
       );
       window.setSize(1100, 700);
       await waitFor(
-        `document.querySelector('[aria-label="Media preview"]').clientWidth >= 320 && document.documentElement.scrollWidth <= innerWidth + 1`,
+        `document.querySelector('.monitor-column').clientWidth >= 320 && document.documentElement.scrollWidth <= innerWidth + 1`,
       );
       assert.ok(await evaluate(`document.querySelector('.editor-top').clientHeight >= 240`));
       console.log(
@@ -359,7 +359,7 @@ app.once("browser-window-created", (_event, window) => {
       );
       assert.equal(
         await evaluate(
-          `!document.querySelector('button[aria-label="Undo"]').disabled && document.querySelector('button[aria-label="Redo"]').disabled && Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Export').disabled`,
+          `!document.querySelector('button[aria-label="Undo"]').disabled && document.querySelector('button[aria-label="Redo"]').disabled && !Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Export').disabled`,
         ),
         true,
       );
@@ -375,7 +375,7 @@ app.once("browser-window-created", (_event, window) => {
       await waitFor(`!document.fullscreenElement`);
       assert.deepEqual(rendererErrors, []);
       console.log(
-        "PASS: timeline zoom/scroll/marker, session project settings, disabled editing/export and fullscreen/Escape with no hydration errors",
+        "PASS: timeline zoom/scroll/marker, session project settings, export availability and fullscreen/Escape with no hydration errors",
       );
 
       const preferences = window.webContents.getLastWebPreferences();
@@ -438,7 +438,7 @@ app.once("browser-window-created", (_event, window) => {
         }
         assert.equal(
           await browser.webContents.executeJavaScript(
-            `document.documentElement.scrollWidth <= innerWidth + 1 && document.querySelector('.preview-monitor').clientHeight >= 300 && getComputedStyle(document.querySelector('.panel-resize-handle')).display === 'none'`,
+            `document.documentElement.scrollWidth <= innerWidth + 1 && document.querySelector('.monitor-column').clientHeight >= 300 && getComputedStyle(document.querySelector('.panel-resize-handle')).display === 'none'`,
           ),
           true,
         );

@@ -1,6 +1,6 @@
 # MotionCraft roadmap
 
-Current milestone: Phase 4 multi-track timeline working slice. Follow ENGINEERING_STANDARDS.md before future work. Composition preview is the recommended next milestone.
+Current milestone: Phase 5 composition preview and local video export working slice. Follow ENGINEERING_STANDARDS.md before future work. Production desktop packaging/security and representative media validation are recommended next.
 
 - [x] Next.js application created and running (user confirmed)
 - [x] Electron dev window and secure preload IPC verified (automated desktop smoke test)
@@ -14,7 +14,10 @@ Current milestone: Phase 4 multi-track timeline working slice. Follow ENGINEERIN
 - [x] Snapshot undo/redo for scene, layer and project settings operations
 - [x] Timeline media drag-and-drop, move/trim/split, selection/copy/paste/delete, snapping, track controls, bounded undo/redo and persistence
 - [ ] Timeline ripple/slip/stretch, cross-scene layer transfer, multi-track group transfer, waveform generation and large-project profiling
-- [ ] Remotion preview and local MP4 export via FFmpeg
+- [x] Shared Remotion composition, synchronized Player preview, local H.264/AAC MP4 worker, secure media resolver, progress/cancel and verified output
+- [x] Workspace stabilization: default linked canvas, mount-safe Player sync, icon controls, fitted/focused canvas and responsive portrait checks
+- [ ] Direct canvas selection/handles, context-menu discovery and representative daily-workflow UX review (see WORKSPACE_REVIEW.md)
+- [ ] Packaged offline rendering runtime, Remotion distribution-license review and broad codec/performance testing
 - [ ] Captions, transitions, basic keyframes
 - [ ] Local backend/persistence and background jobs as needed
 - [ ] Ollama and faster-whisper pipeline
@@ -23,4 +26,4 @@ Current milestone: Phase 4 multi-track timeline working slice. Follow ENGINEERIN
 
 Each milestone must yield a verifiable working slice. Update checkboxes only after successful testing.
 
-Schema v2 and local JSON persistence are implemented, with strict v1 validation and migration before reviewed replacement. Timeline editing is real; the source monitor still plays original media, not compositions. Native dialogs use substituted responses in automated tests; actual picker interaction, codecs, high-DPI gestures and long-project profiling remain manual checks. Rendering, autosave/crash recovery and packaged Electron loading are incomplete. See [Timeline](TIMELINE.md).
+Schema v2 and local JSON persistence are implemented, with strict v1 validation and migration before reviewed replacement. Timeline editing is real; the Source monitor plays originals and the Timeline monitor plays the shared composition. Native dialogs use substituted responses in automated tests; actual picker interaction, codecs, high-DPI gestures and long-project profiling remain manual checks. Local MP4 rendering is implemented and verified; autosave/crash recovery and packaged Electron loading remain incomplete. See [Timeline](TIMELINE.md).

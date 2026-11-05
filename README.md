@@ -2,7 +2,7 @@
 
 **A local-first, AI-assisted desktop video editor for Windows.**
 
-> Early development: the workspace and project foundation work; composition playback, AI and video export are not released.
+> Early development: local timeline preview and MP4 export work in the desktop development app. A packaged Windows release and AI features remain pending.
 
 MotionCraft aims to combine hands-on timeline editing with optional AI-assisted scene planning, asset matching and captions. The product is designed to work with your own media, without requiring paid cloud APIs.
 
@@ -17,7 +17,7 @@ MotionCraft aims to combine hands-on timeline editing with optional AI-assisted 
 
 ## Current status
 
-MotionCraft now has a versioned project model, scene/layer editing, JSON import/export, native local save/open, missing-media relinking and undo/redo, integrated with the resizable workspace and original-source preview. The Phase 4 timeline adds media placement, move/trim/split, multi-selection, snapping, track controls and persistent undoable edits. Composition playback, AI and video rendering remain future work.
+MotionCraft now has a versioned project model, scene/layer editing, JSON import/export, native local save/open, missing-media relinking and undo/redo, integrated with the resizable workspace and original-source preview. The Phase 4 timeline adds media placement, move/trim/split, multi-selection, snapping, track controls and persistent undoable edits. Phase 5 adds real timeline playback and local H.264/AAC MP4 export through a separate rendering worker. AI and packaged delivery remain future work.
 
 See [Roadmap](docs/ROADMAP.md) for checked milestones.
 
@@ -27,8 +27,8 @@ See [Roadmap](docs/ROADMAP.md) for checked milestones.
 | ------------------ | ------------------------------------ | --------------------------------------- |
 | UI                 | Next.js, React, TypeScript, Tailwind | Foundation                              |
 | Desktop shell      | Electron                             | Development verified; packaging pending |
-| Composition        | Remotion                             | Planned                                 |
-| Processing         | FFmpeg                               | Planned                                 |
+| Composition        | Remotion                             | Preview and local export implemented    |
+| Processing         | Bundled FFmpeg / FFprobe             | Local encoding and output verification  |
 | Local AI           | Ollama, faster-whisper               | Planned                                 |
 | Persistence / jobs | PostgreSQL, Redis, BullMQ            | Later phases                            |
 
@@ -99,8 +99,8 @@ Imports reference originals without copying them. Duplicate paths retain asset I
 - Select media to preview it in the 16:9 source monitor and inspect its metadata. Use play/pause, seek, mute or fullscreen. This plays the original source, not a composition.
 - Drag the sidebar, inspector or timeline divider, or use arrow keys on a focused divider. Double-click or press Home to reset that divider. Reset workspace layout restores all defaults. Only panel dimensions are stored locally.
 - Space toggles a playable source, Escape exits fullscreen or clears selection, and Ctrl+O imports media. Text fields and focused interactive controls retain their keyboard behavior.
-- The timeline displays actual scenes and validated layer clips with a marker, scrolling and zoom. Add media/text/shape/caption layers through the inspector. Drag-and-drop, trimming and composition playback are not implemented.
-- Project settings, scene narration/style and layer transform/timing/text controls update the project document. Undo/redo covers project edits. Transform data is not composited in the source monitor. The video Export button stays disabled; Export JSON is functional.
+- The timeline displays actual scenes and validated layer clips with a marker, scrolling and zoom. Add media/text/shape/caption layers through the inspector. Media drag-and-drop, moving, trimming, splitting, multi-selection and snapping are implemented. Select Timeline above the monitor for composition playback; Source preserves original-media inspection.
+- Project settings, scene narration/style and layer transform/timing/text controls update the project document. Undo/redo covers project edits. Transforms appear in the Timeline monitor. Export opens the local MP4 workflow with native destination selection, progress and cancellation; Export JSON remains available.
 
 ## Saving and importing projects
 
@@ -129,3 +129,19 @@ A license has not yet been selected. Until a license is added, do not assume the
 Run `npm run test:timeline` against the dev server for media-to-track placement, real pointer move/trim, one-commit history, split, copy/paste/delete, track flags and native save/new/reopen. Pickers are stubbed; placement uses DOM drag events; clip gestures use Electron mouse input. The screenshot is `.next/timeline-workspace-smoke.png`.
 
 Zustand 5.0.16 is the only Phase 4 dependency: a per-workspace vanilla store keeps high-frequency drag/selection/playhead state outside project snapshots. Native drag-and-drop and pointer events avoid another drag library. `npm run build` verifies the Next.js production bundle; Electron packaging/loading remains unconfigured.
+
+## Preview and export (Phase 5)
+
+Timeline is the default project canvas. Importing/selecting media opens Source inspection; clicking or focusing the timeline automatically restores the linked project preview. The Player and timeline seek each other in project frames; Space toggles the active monitor. Source preview remains independent. Video/image tracks, basic text/caption/shape layers, transforms, opacity, track visibility/mute, source trims and simultaneous audio are supported.
+
+In Electron, choose **Export**, then **Export MP4**. Select a native destination; progress is real. Existing files are replaced only after a verified render succeeds. Cancel preserves the previous output. The job uses a project snapshot and runs outside the UI process. Browser-only mode supports preview with unavailable-media placeholders but has no native export.
+
+```bash
+npm run render:setup
+# With npm run dev active and ELECTRON_RUN_AS_NODE cleared:
+npm run test:render
+```
+
+`render:setup` prepares the headless browser (network required for the initial download) and checks Remotion's bundled media binaries. Rendering then runs locally without a cloud service. The current binary adapter supports Windows x64; it does not depend on FFmpeg being in PATH. A packaged offline runtime, broader codec testing and Remotion license review before distribution remain release gates. See [Rendering architecture, timing, security and limitations](docs/RENDERING.md). The deterministic [render sample](public/render-sample.motioncraft.json) contains generated graphics and requires no external media.
+
+Workspace stabilization adds compact icon controls, a fitted artboard, a focus-canvas mode, automatic timeline fit/follow and a dedicated transport. See [Workspace usability review](docs/WORKSPACE_REVIEW.md) for the research, fixes, verification and remaining UI priorities.

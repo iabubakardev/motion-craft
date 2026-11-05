@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 2,
+  "id": "00000000-0000-4000-8000-000000000100",
+  "name": "Render sample",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "resolution": {
+    "width": 320,
+    "height": 180
+  },
+  "fps": 30,
+  "aspectRatio": "16:9",
+  "duration": 2,
+  "stylePreset": "default",
+  "assets": [],
+  "scenes": [
+    {
+      "id": "00000000-0000-4000-8000-000000000120",
+      "name": "Sample scene",
+      "start": 0,
+      "duration": 2,
+      "narration": "",
+      "stylePreset": "default",
+      "layers": [
+        {
+          "id": "00000000-0000-4000-8000-000000000121",
+          "trackId": "00000000-0000-4000-8000-000000000112",
+          "start": 0,
+          "duration": 2,
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "zIndex": 0,
+          "animation": {
+            "preset": "none",
+            "duration": 0
+          },
+          "type": "shape",
+          "properties": {
+            "shape": "rectangle",
+            "fill": "#20c080",
+            "stroke": "#000000",
+            "strokeWidth": 0
+          }
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000122",
+          "trackId": "00000000-0000-4000-8000-000000000111",
+          "start": 0.5,
+          "duration": 1.5,
+          "position": {
+            "x": 0,
+            "y": 10
+          },
+          "scale": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "zIndex": 0,
+          "animation": {
+            "preset": "none",
+            "duration": 0
+          },
+          "type": "text",
+          "properties": {
+            "text": "MotionCraft",
+            "fontSize": 24,
+            "fontFamily": "system",
+            "color": "#ffffff"
+          }
+        }
+      ],
+      "transitionIn": {
+        "type": "none",
+        "duration": 0
+      },
+      "transitionOut": {
+        "type": "none",
+        "duration": 0
+      },
+      "metadata": {
+        "notes": "Deterministic render fixture",
+        "tags": []
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000110",
+      "name": "V4",
+      "type": "video",
+      "order": 0,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000111",
+      "name": "V3",
+      "type": "video",
+      "order": 1,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": [
+        {
+          "id": "00000000-0000-4000-8000-000000000122",
+          "layerId": "00000000-0000-4000-8000-000000000122",
+          "trackId": "00000000-0000-4000-8000-000000000111",
+          "start": 0.5,
+          "duration": 1.5,
+          "sourceStart": null,
+          "sourceEnd": null
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000112",
+      "name": "V2",
+      "type": "video",
+      "order": 2,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": [
+        {
+          "id": "00000000-0000-4000-8000-000000000121",
+          "layerId": "00000000-0000-4000-8000-000000000121",
+          "trackId": "00000000-0000-4000-8000-000000000112",
+          "start": 0,
+          "duration": 2,
+          "sourceStart": null,
+          "sourceEnd": null
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000113",
+      "name": "V1",
+      "type": "video",
+      "order": 3,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000114",
+      "name": "A1",
+      "type": "audio",
+      "order": 4,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000115",
+      "name": "A2",
+      "type": "audio",
+      "order": 5,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000116",
+      "name": "A3",
+      "type": "audio",
+      "order": 6,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    }
+  ],
+  "settings": {
+    "backgroundColor": "#11151c",
+    "audioSampleRate": 48000,
+    "snapToFrames": true
+  }
+}

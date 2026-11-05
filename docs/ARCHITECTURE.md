@@ -77,10 +77,10 @@ UI features -> `core` and `platform/contracts`; platform adapters -> Electron pr
 
 - `platform/app.ts` owns the typed bridge contract and version adapter; `platform/media.ts` validates media IPC responses and provides browser/server fallbacks. `platform/projects.ts` validates project open/save/activate/relink IPC. Nested adapter folders are deferred until needed.
 - `electron/security.cjs` restricts navigation to `http://localhost:3000` and validates IPC sender identity, owning main frame and origin. The version endpoint accepts no arguments; media endpoints additionally use strict Zod argument and response contracts.
-- Main process denies popups and webviews. Permission requests/checks allow only fullscreen from a trusted app main frame in an owned window; camera, microphone, screen capture, filesystem, clipboard and other permissions remain denied. Context isolation and sandboxing are enabled; renderer Node integration is disabled. Preload exposes only `getAppVersion` and approved `media`/`projects` methods, never raw IPC or filesystem access.
+- Main process denies popups and webviews. Permission requests/checks allow only fullscreen from a trusted app main frame in an owned window; camera, microphone, screen capture, filesystem, clipboard and other permissions remain denied. Context isolation and sandboxing are enabled; renderer Node integration is disabled. Preload exposes only `getAppVersion` and approved `media`/`projects`/`render` methods, never raw IPC or filesystem access.
 - Development uses a fixed localhost port and bounded readiness wait. Closing Electron stops the paired dev server. The existing dev server must be stopped before starting `dev:desktop`; `electron:dev` can attach to it.
 - `electron/security.test.cjs` covers origin and IPC rejection cases. `electron/smoke.cjs` verifies the real main/preload round trip and renderer security preferences against the running dev server.
-- Missing later foundations: composition playback, advanced timeline editing, autosave/crash recovery, Remotion/FFmpeg integration and production runtime/packaging. No empty feature directories are created.
+- Missing later foundations: advanced timeline editing, autosave/crash recovery and production runtime/packaging. No empty feature directories are created.
 - Production content security policy and packaged-origin validation remain required before release. Development currently uses Next.js development scripts/HMR and Google-hosted fonts; offline font bundling is also pending.
 
 ## Media import boundary
@@ -93,7 +93,7 @@ The main-process registry survives renderer reloads and ends when Electron exits
 
 ## Workspace ownership
 
-`features/editor/editor-workspace.tsx` composes the toolbar, sidebar, source monitor, inspector and timeline shell. `useEditorState` combines one existing `useMediaLibrary` instance, `useProjectDocument` history, and a reducer for transient tab, preview, panel, settings-dialog and timeline-marker state. The previous duplicate project-placeholder state was removed. The selected asset ID remains owned by the media hook; there is no parallel selection store or external state library.
+`features/editor/editor-workspace.tsx` composes the toolbar, sidebar, source monitor, inspector and timeline shell. `useEditorState` combines one existing `useMediaLibrary` instance, `useProjectDocument` history, and a reducer for transient tab, preview, panel, settings-dialog state. Timeline interaction state is owned by the focused Zustand store. The previous duplicate project-placeholder state was removed. The selected asset ID remains owned by the media hook; timeline clip selection/playhead are owned by a separate per-workspace Zustand store.
 
 `MediaLibrary` is a reusable panel receiving that hook's state. It stays mounted while sidebar tabs change, preserving imports, search and view state. `features/media/media-preview.tsx` retains source rendering; `features/preview/preview-monitor.tsx` owns playback/fullscreen controls and releases old media when selection changes. Metadata previously shown beside playback now lives in `features/inspector/`.
 
@@ -116,3 +116,17 @@ The main-process registry survives renderer reloads and ends when Electron exits
 ESLint prevents Node built-in/Electron imports in renderer, platform and core runtime modules (tests are excluded). Type-only imports and explicit-any restrictions apply to TypeScript. Shared CJS remains supported; the editor reducer is now checked with typed JSDoc and an exhaustive action switch. Remaining unchecked shared domain CJS is tracked debt rather than falsely covered by TypeScript strict mode.
 
 `app/error.tsx` uses this installed Next.js version's `retry` and `unknown` error contract, logs technical errors separately and explains that retry may reset unsaved in-memory edits. It does not implement autosave or crash recovery. Unreadable existing media catalogs block saves instead of being silently replaced; project loading can still degrade to unavailable media. Dirty comparison is memoized on document/checkpoint identity so transient preview updates do not repeatedly validate and serialize an unchanged project.
+
+## Shared composition and local export (Phase 5)
+
+`rendering/input.cjs` validates the original project plus derived approved asset URLs and creates deterministic frame placements. It is an adapter, not a second editing schema. `rendering/project-composition.tsx` is shared by `@remotion/player` and the headless renderer registration in `rendering/entry.tsx`. It composes video/image/audio, basic text/caption/shape content, transforms, visibility, mute and existing simple entrance presets. Gaps use the project background over black.
+
+`features/preview/composition-monitor.tsx` subscribes directly to the existing timeline store and publishes Player frame updates without workspace state updates. Frame comparison prevents seek feedback; stable component identity preserves playback across normal edits. Source and Timeline monitors are explicit modes.
+
+`platform/render.ts` validates job responses. Preload exposes only render start(project), status() and cancel(jobId). `electron/ipc/render.cjs` validates exact tuples, owning main frame/origin, native destination selection and overwrite confirmation. `electron/render-jobs.cjs` serializes jobs, captures the immutable project/bindings, launches a dedicated Node child using Electron's Node runtime, validates worker events and protects output replacement. No render progress enters project history/JSON.
+
+`workers/render.cjs` prepares the browser, bundles only the composition, renders H.264/AAC with two-way concurrency, verifies the MP4 with the pinned FFprobe binary and cleans temporary resources. `electron/render-media-server.cjs` serves only approved asset IDs on an ephemeral 127.0.0.1 port with a random per-job token, strict Host/Origin/method checks, byte ranges and file fingerprints. The worker never gives the browser native paths; Electron custom protocol URLs are used only for interactive preview. Node bundler/renderer packages are blocked by ESLint in browser-facing areas. See [Rendering](RENDERING.md) for lifecycle, timings, tests and release limits.
+
+## Workspace synchronization refinement
+
+The existing timeline Zustand store also owns monitor mode and timeline playback status. Timeline is the default; library Source inspection is independent and timeline interactions reactivate composition preview. `use-timeline-player.ts` connects listeners through the Player callback ref, with guarded frame publication and a separate paused cursor beyond the render duration. `composition-transport.tsx` uses focused subscriptions. Canvas focus is temporary workspace state and does not rewrite persisted panel dimensions. See [Workspace review](WORKSPACE_REVIEW.md).

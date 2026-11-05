@@ -1,7 +1,14 @@
 "use client";
 
-import { TimelineProvider } from "@/features/timeline/timeline-store";
-import { useRef } from "react";
+import { EditorIcon } from "./editor-icon";
+import {
+  useTimeline,
+  useTimelineStoreApi,
+  TimelineProvider,
+} from "@/features/timeline/timeline-store";
+import { CompositionMonitor } from "@/features/preview/composition-monitor";
+import { ExportDialog } from "@/features/rendering/export-dialog";
+import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { PanelResizeHandle } from "@/components/ui/panel-resize-handle";
 import { PreviewMonitor } from "@/features/preview/preview-monitor";
@@ -41,17 +48,38 @@ function Workspace() {
     resizePanel,
     resetPanel,
   } = useEditorState();
+  const timeline = useTimelineStoreApi();
+  const monitor = useTimeline((s) => s.monitor);
+  const setMonitor = timeline.getState().setMonitor;
+  const [canvasFocus, setCanvasFocus] = useState(false);
+  const importSource = () => {
+    setMonitor("source");
+    return library.importMedia();
+  };
+  const selectSource: typeof doc.selectMedia = (id) => {
+    setMonitor("source");
+    doc.selectMedia(id);
+  };
+  const [exportOpen, setExportOpen] = useState(false);
   const previewRef = useRef<PreviewMonitorHandle>(null);
   const { clearSelection } = doc;
   useEditorShortcuts({
     previewRef,
-    importMedia: library.importMedia,
+    importMedia: importSource,
     clearSelection,
     canImport: library.available && !library.loading && !library.importing,
     hasSelection: !!selected || !!doc.activeScene,
-    canPlay: !!selected && selected.type !== "image" && selected.status !== "error",
+    canPlay:
+      monitor === "timeline"
+        ? doc.project.duration > 0
+        : !!selected && selected.type !== "image" && selected.status !== "error",
     settingsOpen:
-      state.settingsOpen || doc.importOpen || !!doc.candidate || !!doc.deleteSceneId || doc.busy,
+      state.settingsOpen ||
+      exportOpen ||
+      doc.importOpen ||
+      !!doc.candidate ||
+      !!doc.deleteSceneId ||
+      doc.busy,
     saveProject: () => doc.save(),
     undo: doc.undo,
     redo: doc.redo,
@@ -71,16 +99,17 @@ function Workspace() {
         };
   return (
     <div
-      className="editor-workspace"
+      className={`editor-workspace ${canvasFocus ? "is-canvas-focused" : ""}`}
       style={
         {
           "--sidebar-width": `${panels.left}px`,
           "--inspector-width": `${panels.right}px`,
-          "--timeline-height": `${panels.bottom}px`,
+          "--timeline-height": `${canvasFocus ? 160 : panels.bottom}px`,
         } as CSSProperties
       }
     >
       <EditorToolbar
+        fileActions={<ProjectActions document={doc} />}
         project={projectSettings}
         dirty={doc.dirty}
         filename={doc.filename}
@@ -89,10 +118,10 @@ function Workspace() {
         canRedo={doc.canRedo && !doc.busy}
         onUndo={doc.undo}
         onRedo={doc.redo}
+        onExport={() => setExportOpen(true)}
         onSettings={() => dispatch({ type: "settings", open: true })}
         onResetLayout={() => dispatch({ type: "panels", panels: { ...DEFAULT_PANELS } })}
       />
-      <ProjectActions document={doc} />
       {!!doc.issues.length && (
         <div role="alert" className="project-error-banner">
           <div className="flex justify-between gap-3">
@@ -113,7 +142,7 @@ function Workspace() {
       <div ref={bodyRef} className="editor-body">
         <div className="editor-top">
           <MediaSidebar
-            library={{ ...library, setSelectedId: doc.selectMedia }}
+            library={{ ...library, importMedia: importSource, setSelectedId: selectSource }}
             document={doc}
             tab={state.sidebarTab}
             onTab={(tab) => dispatch({ type: "tab", tab })}
@@ -127,24 +156,58 @@ function Workspace() {
             onResize={(value) => resizePanel("left", value)}
             onReset={() => resetPanel("left")}
           />
-          <div className="flex min-h-0 min-w-0 flex-col">
-            <div
-              aria-label="Active scene context"
-              className="bg-[var(--editor-panel)] px-3 py-1 text-[9px] text-[var(--editor-muted)]"
-            >
-              {doc.activeScene
-                ? `${doc.activeScene.name} · ${doc.activeScene.layers.length} layers · ${doc.activeScene.duration.toFixed(1)} s — source preview only`
-                : "No active scene · Select a scene to edit project data"}
+          <div className="monitor-column flex min-h-0 min-w-0 flex-col">
+            <div className="monitor-toolbar">
+              <div className="monitor-modes" aria-label="Preview mode">
+                <button
+                  aria-pressed={monitor === "timeline"}
+                  title="Project canvas linked to the timeline"
+                  onClick={() => setMonitor("timeline")}
+                >
+                  <EditorIcon name="scene" className="h-3.5 w-3.5" />
+                  Timeline
+                </button>
+                <button
+                  aria-pressed={monitor === "source"}
+                  title="Inspect the original source independently"
+                  onClick={() => setMonitor("source")}
+                >
+                  Source
+                </button>
+              </div>
+              <span className="ml-auto truncate text-[10px] text-[var(--editor-muted)]">
+                {monitor === "timeline"
+                  ? doc.activeScene?.name || "Project canvas"
+                  : "Source only (unlinked)"}
+              </span>
+              <button
+                className={`editor-icon-button ${canvasFocus ? "is-active" : ""}`}
+                aria-label="Focus canvas"
+                aria-pressed={canvasFocus}
+                title="Focus canvas / restore workspace"
+                onClick={() => setCanvasFocus((value) => !value)}
+              >
+                <EditorIcon name="focus" />
+              </button>
             </div>
-            <PreviewMonitor
-              key={selected?.id || "empty"}
-              asset={selected}
-              project={projectSettings}
-              preview={preview}
-              onChange={updatePreview}
-              onError={library.markUnavailable}
-              controlsRef={previewRef}
-            />
+            {monitor === "timeline" ? (
+              <CompositionMonitor
+                key={`${doc.project.id}:${doc.documentGeneration}`}
+                project={doc.project}
+                assets={library.assets}
+                controlsRef={previewRef}
+              />
+            ) : (
+              <PreviewMonitor
+                key={selected?.id || "empty"}
+                asset={selected}
+                project={projectSettings}
+                preview={preview}
+                onChange={updatePreview}
+                onError={library.markUnavailable}
+                controlsRef={previewRef}
+              />
+            )}
           </div>
           <PanelResizeHandle
             label="Resize properties inspector"
@@ -176,6 +239,7 @@ function Workspace() {
           documentGeneration={doc.documentGeneration}
           busy={
             doc.busy ||
+            exportOpen ||
             state.settingsOpen ||
             doc.importOpen ||
             !!doc.candidate ||
@@ -192,11 +256,12 @@ function Workspace() {
           {doc.project.assets.length} assets · {doc.project.scenes.length} scenes ·{" "}
           {doc.project.duration.toFixed(1)} s
         </span>
-        <span className="hidden sm:inline">Source preview · Composition rendering pending</span>
+        <span className="hidden sm:inline">Local composition preview / MP4 export</span>
         <span>
           {projectSettings.width} × {projectSettings.height} · {projectSettings.fps} fps
         </span>
       </footer>
+      {exportOpen && <ExportDialog project={doc.project} onClose={() => setExportOpen(false)} />}
       {state.settingsOpen && (
         <ProjectSettings
           project={projectSettings}

@@ -1,6 +1,6 @@
 ﻿# Phase 4 timeline editing
 
-MotionCraft has a working multitrack editing slice. The source monitor still previews original media; it does not play the composition. Track visibility/mute are saved composition flags, explicitly labeled in their controls, and will affect composition playback when that renderer is implemented.
+MotionCraft has a working multitrack editing slice. Phase 5 adds a separate Timeline monitor and MP4 export using the same composition; Source mode still previews originals. Track visibility/mute now affect composition playback/export. See [Rendering](RENDERING.md).
 
 ## Model and timing
 
@@ -76,3 +76,5 @@ Remaining: composition playback/render/export; waveform generation; ripple/slip/
 - `features/media`: [media-items.tsx](../features/media/media-items.tsx).
 - `features/projects`: [json-import-dialog.tsx](../features/projects/json-import-dialog.tsx), [use-project-document.ts](../features/projects/use-project-document.ts).
 - `features/timeline`: [clip-properties.tsx](../features/timeline/clip-properties.tsx) (new), [interaction-store.cjs](../features/timeline/interaction-store.cjs) (new), [interaction-types.ts](../features/timeline/interaction-types.ts) (new), [timeline-controls.tsx](../features/timeline/timeline-controls.tsx) (new), [timeline-panel.tsx](../features/timeline/timeline-panel.tsx), [timeline-ruler.tsx](../features/timeline/timeline-ruler.tsx), [timeline-store.tsx](../features/timeline/timeline-store.tsx) (new), [use-clip-gesture.ts](../features/timeline/use-clip-gesture.ts) (new).
+
+The workspace cleanup makes Timeline the default canvas, restores it on timeline interactions, auto-fits new content and follows off-screen playheads. Timeline timecode editing uses a stable draft rather than replacing the input every frame. See [Workspace review](WORKSPACE_REVIEW.md).

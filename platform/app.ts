@@ -1,10 +1,20 @@
+import type { RenderJob } from "@/platform/render";
 import type { MediaAsset, MediaImportResult, MediaMetadata } from "@/core/media/types";
 import type { z } from "zod";
 import type { Project, ProjectAsset } from "@/core/project/types";
-import type { openResultSchema, activationResultSchema, saveResultSchema } from "@/core/project/ipc.cjs";
+import type {
+  openResultSchema,
+  activationResultSchema,
+  saveResultSchema,
+} from "@/core/project/ipc.cjs";
 
 export interface DesktopBridge {
   getAppVersion: () => Promise<string>;
+  render: {
+    start: (project: Project) => Promise<RenderJob | null>;
+    status: () => Promise<RenderJob | null>;
+    cancel: (id: string) => Promise<RenderJob | null>;
+  };
   media: {
     selectFiles: () => Promise<MediaImportResult>;
     listAssets: () => Promise<MediaAsset[]>;
@@ -12,7 +22,10 @@ export interface DesktopBridge {
   };
   projects: {
     openFile: () => Promise<z.infer<typeof openResultSchema>>;
-    activate: (project: Project, candidateId: string | null) => Promise<z.infer<typeof activationResultSchema>>;
+    activate: (
+      project: Project,
+      candidateId: string | null,
+    ) => Promise<z.infer<typeof activationResultSchema>>;
     save: (project: Project, saveAs: boolean) => Promise<z.infer<typeof saveResultSchema>>;
     relink: (asset: ProjectAsset) => Promise<MediaAsset | null>;
   };

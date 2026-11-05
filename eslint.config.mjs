@@ -30,15 +30,32 @@ const eslintConfig = defineConfig([
       "features/**/*.{ts,tsx,cjs}",
       "platform/**/*.{ts,tsx,cjs}",
       "core/**/*.{ts,tsx,cjs}",
+      "rendering/**/*.{ts,tsx,cjs}",
     ],
     ignores: ["**/*.test.*"],
     rules: {
-      "no-restricted-imports": ["error", ...desktopOnlyModules],
-      "no-restricted-modules": ["error", ...desktopOnlyModules],
+      "no-restricted-imports": [
+        "error",
+        ...desktopOnlyModules,
+        "@remotion/renderer",
+        "@remotion/bundler",
+      ],
+      "no-restricted-modules": [
+        "error",
+        ...desktopOnlyModules,
+        "@remotion/renderer",
+        "@remotion/bundler",
+      ],
     },
   },
   {
-    files: ["electron/**/*.cjs", "core/**/*.cjs", "features/**/*.cjs"],
+    files: [
+      "electron/**/*.cjs",
+      "core/**/*.cjs",
+      "features/**/*.cjs",
+      "rendering/**/*.cjs",
+      "workers/**/*.cjs",
+    ],
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },
   // Override default ignores of eslint-config-next.

@@ -7,6 +7,10 @@ export interface DragPreview {
   trackId: string;
 }
 export interface TimelineState {
+  monitor: "timeline" | "source";
+  playing: boolean;
+  setMonitor: (monitor: "timeline" | "source") => void;
+  setPlaying: (playing: boolean) => void;
   selectedIds: string[];
   activeTrackId: string | null;
   playheadFrame: number;

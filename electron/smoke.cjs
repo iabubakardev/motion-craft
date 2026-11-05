@@ -17,7 +17,7 @@ app.on("browser-window-created", (_event, window) => {
       }))()`);
       assert.equal(result.version, app.getVersion());
       assert.equal(result.nodeAvailable, false);
-      assert.deepEqual(result.bridgeKeys, ["getAppVersion", "media", "projects"]);
+      assert.deepEqual(result.bridgeKeys, ["getAppVersion", "render", "media", "projects"]);
       const prefs = window.webContents.getLastWebPreferences();
       assert.equal(prefs.contextIsolation, true);
       assert.equal(prefs.sandbox, true);
@@ -33,7 +33,9 @@ app.on("browser-window-created", (_event, window) => {
         }
         check();
       })`);
-      console.log("PASS: real preload IPC, app version, bridge surface, renderer isolation and sandbox");
+      console.log(
+        "PASS: real preload IPC, app version, bridge surface, renderer isolation and sandbox",
+      );
       clearTimeout(timeout);
       app.exit(0);
     } catch (error) {

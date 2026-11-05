@@ -21,7 +21,7 @@ const { snapEdges, snapTargets } = require("./snapping.cjs");
 const { createTimelineStore } = require("../../features/timeline/interaction-store.cjs");
 const stamp = "2026-11-04T12:00:00.000Z";
 function fixture(type = "video") {
-  let p = ops.createProject();
+  let p = ops.createProject({ now: "2026-01-01T00:00:00.000Z" });
   p = ops.mergeProjectAssets(p, [
     {
       id: randomUUID(),
@@ -181,7 +181,7 @@ test("split creates adjacent clips with correct source ranges and preserves gene
     () => edit(p, { type: "SplitClip", clipId: left.id, newClipId: randomUUID(), frame: 0 }),
     /strictly inside/,
   );
-  let graphic = ops.addScene(ops.createProject());
+  let graphic = ops.addScene(ops.createProject({ now: "2026-01-01T00:00:00.000Z" }));
   graphic = ops.addLayer(graphic, graphic.scenes[0].id, "text");
   const layer = graphic.scenes[0].layers[0];
   graphic = ops.updateLayer(graphic, graphic.scenes[0].id, layer.id, {
@@ -352,7 +352,7 @@ test("selection, clipboard and drag previews stay transient and reset on replace
 });
 const { assertLockedTracksUnchanged } = require("./locks.cjs");
 test("scene/layer commits cannot bypass track locks, while metadata and unchanged content remain editable", () => {
-  let p = ops.addScene(ops.createProject());
+  let p = ops.addScene(ops.createProject({ now: "2026-01-01T00:00:00.000Z" }));
   p = ops.addLayer(p, p.scenes[0].id, "text");
   const layer = p.scenes[0].layers[0];
   p = edit(p, { type: "UpdateTrack", trackId: layer.trackId, patch: { locked: true } });
@@ -420,4 +420,18 @@ test("splitting a declared unknown-duration source uses the original approved ra
     () => edit(p, { type: "TrimClip", clipId: split[1].id, edge: "right", frame: 11 * p.fps }),
     /source duration/,
   );
+});
+
+test("timeline view defaults and replacement reset keep source preview separate from project playback", () => {
+  const store = createTimelineStore();
+  assert.equal(store.getState().monitor, "timeline");
+  store.getState().setMonitor("source");
+  store.getState().setPlayhead(45);
+  assert.equal(store.getState().monitor, "source");
+  store.getState().setMonitor("timeline");
+  store.getState().setPlaying(true);
+  store.getState().reset();
+  assert.equal(store.getState().monitor, "timeline");
+  assert.equal(store.getState().playing, false);
+  assert.equal(store.getState().playheadFrame, 0);
 });

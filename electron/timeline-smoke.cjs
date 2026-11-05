@@ -121,6 +121,12 @@ app.once("browser-window-created", (_event, window) => {
       console.log(
         "PASS: imported local media drag/drop inserts an asset-backed clip through the renderer",
       );
+      await evaluate(
+        `(()=>{const input=document.querySelector('input[aria-label="Timeline zoom"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'12');input.dispatchEvent(new Event('input',{bubbles:true}));})()`,
+      );
+      await waitFor(
+        `Number(document.querySelector('input[aria-label="Timeline zoom"]').value)===12`,
+      );
       await label("Toggle timeline snapping");
       await pointer(`[data-clip-id="${clip.id}"]`, 24);
       project = await exported();

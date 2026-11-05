@@ -7,6 +7,10 @@ function selectIds(ids, id, additive) {
 /** @returns {import('zustand/vanilla').StoreApi<import('./interaction-types').TimelineState>} */
 function createTimelineStore() {
   return createStore((set, get) => ({
+    monitor: "timeline",
+    playing: false,
+    setMonitor: (monitor) => set({ monitor }),
+    setPlaying: (playing) => set({ playing }),
     selectedIds: [],
     activeTrackId: null,
     playheadFrame: 0,
@@ -40,6 +44,8 @@ function createTimelineStore() {
     reset: () => {
       get().cancelDrag();
       set({
+        monitor: "timeline",
+        playing: false,
         selectedIds: [],
         activeTrackId: null,
         playheadFrame: 0,

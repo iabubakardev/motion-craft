@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- Approved media protocol URLs bypass the Next image optimizer. */
 "use client";
+import { EditorIcon } from "@/features/editor/editor-icon";
+import { useState } from "react";
 import { formatTimecode, parseTimecode, secondsToFrames } from "@/core/timeline/time.cjs";
 import { TimelineRuler } from "./timeline-ruler";
 import { useTimeline, useTimelineStoreApi } from "./timeline-store";
@@ -106,6 +108,7 @@ export function Playhead({ zoom, fps }: { zoom: number; fps: number }) {
     <>
       <div
         aria-hidden
+        data-testid="timeline-playhead"
         className="pointer-events-none absolute bottom-0 top-6 z-10 w-px bg-cyan-300"
         style={{ left: HEADER + (frame / fps) * zoom }}
       />
@@ -140,9 +143,11 @@ export function SnapButton() {
       aria-label="Toggle timeline snapping"
       aria-pressed={enabled}
       onClick={() => store.getState().toggleSnap()}
-      className="editor-secondary !px-2 !py-1"
+      title="Snap to playhead, clip edges and scene boundaries"
+      className={`editor-icon-button ${enabled ? "is-active" : ""}`}
     >
-      Snap {enabled ? "on" : "off"}
+      <EditorIcon name="magnet" />
+      <span className="sr-only">Snap {enabled ? "on" : "off"}</span>
     </button>
   );
 }
@@ -155,25 +160,31 @@ export function TimelineMessage() {
   ) : null;
 }
 export function TimelineReadout({ fps }: { fps: number }) {
+  const [draft, setDraft] = useState<string | null>(null);
   const frame = useTimeline((s) => s.playheadFrame),
     store = useTimelineStoreApi();
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        store.getState().setMonitor("timeline");
         const data = new FormData(e.currentTarget);
         try {
           store.getState().setPlayhead(parseTimecode(String(data.get("timecode")), fps));
+          setDraft(null);
         } catch (error) {
           store.getState().setMessage(error instanceof Error ? error.message : "Invalid timecode");
         }
       }}
     >
       <input
-        key={`${frame}:${fps}`}
         aria-label="Timeline timecode"
         name="timecode"
-        defaultValue={formatTimecode(frame, fps)}
+        value={draft ?? formatTimecode(frame, fps)}
+        title="HH:MM:SS:FF - press Enter to seek"
+        onFocus={() => setDraft(formatTimecode(frame, fps))}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => setDraft(null)}
         className="w-24 bg-transparent font-mono"
       />
       <button type="submit" className="sr-only">

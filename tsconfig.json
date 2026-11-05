@@ -28,7 +28,12 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "rendering/**/*.cjs",
+    "workers/**/*.cjs",
+    "electron/render*.cjs",
+    "electron/verify-render.cjs",
+    "electron/ipc/render.cjs"
   ],
   "exclude": ["node_modules"]
 }

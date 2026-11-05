@@ -67,3 +67,13 @@ Manual checks remain for the actual Windows picker, representative codecs, high-
 - Added `features/timeline/{timeline-panel.tsx, timeline-ruler.tsx, track-header.tsx}`.
 - Updated `features/media/{media-library.tsx, media-items.tsx, media-preview.tsx, use-media-library.ts}` to reuse session state and source rendering in panels.
 - Updated `app/{page.tsx, layout.tsx, globals.css}`, `electron/{main.cjs, security.cjs, security.test.cjs, media-smoke.cjs}`, `package.json`, README and project documentation.
+
+## Phase 5 monitors and export
+
+Source preserves the original media controls. Timeline above the monitor opens the shared Remotion Player, synchronized directly with the frame playhead. Space controls the active monitor. Export now opens native MP4 destination selection, real job progress and cancellation. See [Rendering](RENDERING.md) for the tested pipeline and remaining production/codec limits.
+
+## Workspace stabilization
+
+Timeline is now the default monitor. Source inspection is explicit and unlinked; using the timeline switches back to composition preview. Monitor mode and project-playback status live in the existing transient Zustand store. A callback-ref Player bridge handles late mounting, direct seeking and frame publication. Playback moves the visible marker; out-of-range authoring cursors are preserved.
+
+File commands share the main toolbar. Editing and track actions use accessible SVG icons, and the canvas has its own transport beneath a fitted artboard. Focus canvas temporarily hides side panels and reduces timeline height to 160px without changing saved dimensions. New content auto-fits the timeline; subsequent edits retain manual zoom. See [research and verification](WORKSPACE_REVIEW.md).

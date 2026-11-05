@@ -1,4 +1,5 @@
 "use client";
+import { EditorIcon } from "@/features/editor/editor-icon";
 import { memo, useEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type { DragEvent } from "react";
@@ -57,6 +58,9 @@ export const TimelinePanel = memo(function TimelinePanel({
     useShallow((s) => ({ zoom: s.zoom, scrollLeft: s.scrollLeft, viewportWidth: s.viewportWidth })),
   );
   const activeTrackId = useTimeline((s) => s.activeTrackId);
+  const selectedCount = useTimeline((s) => s.selectedIds.length),
+    clipboardCount = useTimeline((s) => s.clipboard.length);
+  const viewIdentity = useRef({ key: "", hadContent: false });
   const index = useMemo(() => createTimelineIndex(project), [project]);
   const thumbnails = useMemo(
     () =>
@@ -74,6 +78,19 @@ export const TimelinePanel = memo(function TimelinePanel({
     () => [...project.tracks].sort((a, b) => a.order - b.order),
     [project.tracks],
   );
+  useEffect(
+    () =>
+      store.subscribe((state, previous) => {
+        if (state.playheadFrame === previous.playheadFrame) return;
+        const view = viewport.current;
+        if (!view) return;
+        const x = (state.playheadFrame / project.fps) * state.zoom;
+        const available = view.clientWidth - HEADER;
+        if (x < view.scrollLeft || x > view.scrollLeft + available - 24)
+          view.scrollLeft = Math.max(0, x - available / 4);
+      }),
+    [store, project.fps],
+  );
   const gesture = useClipGesture(project, execute, viewport, busy);
   const extent = Math.min(
     86400,
@@ -85,8 +102,20 @@ export const TimelinePanel = memo(function TimelinePanel({
   );
   const maxZoom = Math.max(0.01, Math.min(600, 16000000 / Math.max(1, project.duration)));
   useEffect(() => {
-    store.getState().reset();
-  }, [project.id, documentGeneration, store]);
+    const key = `${project.id}:${documentGeneration}`,
+      state = store.getState();
+    const changed = viewIdentity.current.key !== key;
+    if (changed) state.reset();
+    if (project.duration > 0 && (changed || !viewIdentity.current.hadContent))
+      state.setZoom(
+        Math.min(
+          600,
+          16000000 / project.duration,
+          Math.max(0.01, (state.viewportWidth - HEADER - 32) / project.duration),
+        ),
+      );
+    viewIdentity.current = { key, hadContent: project.duration > 0 };
+  }, [project.id, project.duration, documentGeneration, store]);
   useEffect(() => {
     const state = store.getState();
     const ids = state.selectedIds.filter((id) => index.clips.has(id));
@@ -177,6 +206,9 @@ export const TimelinePanel = memo(function TimelinePanel({
       aria-label="Timeline workspace"
       className="editor-panel flex h-full min-h-0 flex-col"
       tabIndex={-1}
+      onPointerDownCapture={() => store.getState().setMonitor("timeline")}
+      onDragOverCapture={() => store.getState().setMonitor("timeline")}
+      onFocusCapture={() => store.getState().setMonitor("timeline")}
       onKeyDown={(event) => {
         if (
           busy ||
@@ -229,22 +261,33 @@ export const TimelinePanel = memo(function TimelinePanel({
           <button
             key={name}
             type="button"
-            disabled={busy}
-            className="editor-secondary !px-2 !py-1 capitalize"
+            disabled={
+              busy ||
+              (name === "paste"
+                ? clipboardCount === 0
+                : name === "split"
+                  ? selectedCount !== 1
+                  : selectedCount === 0)
+            }
+            className="editor-icon-button"
+            title={`${name[0].toUpperCase() + name.slice(1)} clips`}
             aria-label={`${name} timeline clips`}
             onClick={() => action(name)}
           >
-            {name}
+            <EditorIcon name={name} />
+            <span className="sr-only">{name}</span>
           </button>
         ))}
         <SnapButton />
         <button
           type="button"
-          className="editor-secondary !px-2 !py-1"
+          className="editor-icon-button"
           onClick={() => store.getState().setPlayhead(0)}
           aria-label="Reset timeline playhead"
+          title="Reset playhead"
         >
-          Start
+          <EditorIcon name="start" />
+          <span className="sr-only">Start</span>
         </button>
         <div className="ml-auto flex items-center gap-2">
           <button aria-label="Zoom timeline out" onClick={() => store.getState().setZoom(zoom - 4)}>
@@ -258,7 +301,7 @@ export const TimelinePanel = memo(function TimelinePanel({
             step={0.01}
             value={Math.min(zoom, maxZoom)}
             onChange={(e) => store.getState().setZoom(Number(e.target.value))}
-            className="w-20"
+            className="editor-range w-20"
           />
           <button
             aria-label="Zoom timeline in"
@@ -267,7 +310,9 @@ export const TimelinePanel = memo(function TimelinePanel({
             +
           </button>
           <button
-            className="editor-secondary !px-2 !py-1"
+            className="editor-icon-button"
+            title="Fit project to timeline"
+            aria-label="Fit project"
             onClick={() =>
               store
                 .getState()
@@ -282,7 +327,8 @@ export const TimelinePanel = memo(function TimelinePanel({
                 )
             }
           >
-            Fit project
+            <EditorIcon name="fit" />
+            <span className="sr-only">Fit project</span>
           </button>
         </div>
       </div>
@@ -304,7 +350,7 @@ export const TimelinePanel = memo(function TimelinePanel({
               className="sticky left-0 z-30 shrink-0 border-r border-[var(--editor-border)] bg-[var(--editor-panel)] px-2 text-[9px]"
               style={{ width: HEADER }}
             >
-              TRACKS · source preview only
+              TRACKS
             </div>
             <FrameRuler zoom={zoom} extent={extent} fps={project.fps} />
           </div>
@@ -403,10 +449,11 @@ export const TimelinePanel = memo(function TimelinePanel({
                   {track.name}
                 </button>
                 <button
+                  className="track-icon-button"
                   disabled={busy}
                   aria-label={`Toggle visibility ${track.name}`}
                   aria-pressed={track.visible}
-                  title="Composition visibility (rendering pending)"
+                  title="Show/hide this track in Timeline preview and export"
                   onClick={() =>
                     run({
                       type: "UpdateTrack",
@@ -415,9 +462,10 @@ export const TimelinePanel = memo(function TimelinePanel({
                     })
                   }
                 >
-                  {track.visible ? "V" : "-"}
+                  <EditorIcon name={track.visible ? "eye" : "hidden"} className="h-3 w-3" />
                 </button>
                 <button
+                  className="track-icon-button"
                   disabled={busy}
                   aria-label={`Toggle mute ${track.name}`}
                   aria-pressed={track.muted}
@@ -426,10 +474,12 @@ export const TimelinePanel = memo(function TimelinePanel({
                     run({ type: "UpdateTrack", trackId: track.id, patch: { muted: !track.muted } })
                   }
                 >
-                  {track.muted ? "M" : "A"}
+                  <EditorIcon name={track.muted ? "mute" : "volume"} className="h-3 w-3" />
                 </button>
                 <button
+                  className="track-icon-button"
                   disabled={busy}
+                  title={track.locked ? "Unlock track" : "Lock track"}
                   aria-label={`Toggle lock ${track.name}`}
                   aria-pressed={track.locked}
                   onClick={() =>
@@ -440,10 +490,12 @@ export const TimelinePanel = memo(function TimelinePanel({
                     })
                   }
                 >
-                  {track.locked ? "L" : "U"}
+                  <EditorIcon name={track.locked ? "lock" : "unlock"} className="h-3 w-3" />
                 </button>
                 <button
+                  className="track-icon-button"
                   disabled={busy || track.order === 0}
+                  title="Move track up"
                   aria-label={`Move track ${track.name} up`}
                   onClick={() =>
                     run({
@@ -453,10 +505,12 @@ export const TimelinePanel = memo(function TimelinePanel({
                     })
                   }
                 >
-                  ^
+                  <EditorIcon name="up" className="h-3 w-3" />
                 </button>
                 <button
+                  className="track-icon-button"
                   disabled={busy || track.order === tracks.length - 1}
+                  title="Move track down"
                   aria-label={`Move track ${track.name} down`}
                   onClick={() =>
                     run({
@@ -466,7 +520,7 @@ export const TimelinePanel = memo(function TimelinePanel({
                     })
                   }
                 >
-                  v
+                  <EditorIcon name="down" className="h-3 w-3" />
                 </button>
                 <select
                   disabled={busy}

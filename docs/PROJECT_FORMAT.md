@@ -73,7 +73,7 @@ History keeps up to 50 immutable past document snapshots. Scene/layer/project-se
 
 Media imports/metadata enrich the document and all history snapshots without creating scene-history entries. Metadata completion can make a saved snapshot dirty; save again to persist it. Replacing a document aborts pending metadata probes and ignores stale generations. Neither probe results nor pending native operations may overwrite a replacement document.
 
-Scenes and layer controls edit real data, and the timeline displays its validated projection. The source monitor still plays original files. Transforms, styles, animations and transitions are not composited; video export and composition playback remain deferred. Timeline editing is documented in [Timeline](TIMELINE.md).
+Scenes and layer controls edit real data, and the timeline displays its validated projection. The source monitor still plays original files. The Phase 5 Timeline monitor and MP4 worker composite basic transforms, text/shapes/captions, images/video/audio and simple entrance presets. Scene transitions and style presets remain deferred. Source mode still plays originals. Timeline editing is documented in [Timeline](TIMELINE.md).
 
 ## Verification and files
 
