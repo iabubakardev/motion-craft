@@ -19,7 +19,7 @@ export interface ValidationIssue {
   message: string;
 }
 export type ProjectValidation =
-  | { success: true; project: Project; migratedFrom?: 1 }
+  | { success: true; project: Project; migratedFrom?: 1 | 2 }
   | { success: false; errors: ValidationIssue[] };
 export interface ProjectHistory {
   present: Project;

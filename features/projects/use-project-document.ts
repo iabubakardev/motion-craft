@@ -1,4 +1,6 @@
 "use client";
+import type { commandSchema as motionCommandSchema } from "@/core/animation/commands.cjs";
+import { executeMotionCommand } from "@/core/animation/commands.cjs";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -28,7 +30,7 @@ const bootstrap = operations.createProject({
   ),
 });
 export interface ProjectCandidate {
-  migratedFrom?: 1;
+  migratedFrom?: 1 | 2;
   project: Project;
   candidateId: string | null;
   filename: string | null;
@@ -194,6 +196,29 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
     },
     [ready, install, reportError],
   );
+  const executeMotion = useCallback(
+    (command: z.infer<typeof motionCommandSchema>, expected?: Project) => {
+      if (!ready || busyRef.current) return false;
+      try {
+        const snapshot = current.current;
+        if (expected && expected !== snapshot.present)
+          throw new Error("The project changed during this gesture. Try the edit again.");
+        install(
+          commitProject(
+            snapshot,
+            executeMotionCommand(snapshot.present, command, new Date().toISOString()),
+          ),
+        );
+        setIssues([]);
+        setNotice("");
+        return true;
+      } catch (error) {
+        reportError(error);
+        return false;
+      }
+    },
+    [ready, install, reportError],
+  );
   function addScene() {
     const next = mutate(operations.addScene);
     if (next) selectScene(next.scenes[next.scenes.length - 1].id);
@@ -313,6 +338,7 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
   return {
     project,
     executeTimeline,
+    executeMotion,
     documentGeneration,
     ready,
     desktop,

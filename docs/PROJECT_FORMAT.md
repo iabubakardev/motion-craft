@@ -1,25 +1,25 @@
-# Project JSON format and timing (schemaVersion 2; v1 migration supported)
+# Project JSON format and timing (schemaVersion 3; v1/v2 migration supported)
 
 The project document is the source of truth for editing data. React UI state, playback status, native file paths and runtime media URLs are separate. The same strict Zod schemas validate renderer imports and Electron file operations; TypeScript types are inferred from those schemas.
 
 ## Format
 
-See the complete [sample project](../public/sample-project.motioncraft.json). It remains a v1 migration fixture. Its image is intentionally unavailable until relinked; media bytes are never embedded. New exports/save files use v2.
+See the complete [sample project](../public/sample-project.motioncraft.json). It remains a v1 migration fixture. Its image is intentionally unavailable until relinked; media bytes are never embedded. New exports/save files use v3. See [Animation](ANIMATION.md) for the canonical animation map and migration semantics.
 
-| Entity  | Fields                                                                                                                                                           |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Project | `schemaVersion`, `id`, `name`, `createdAt`, `updatedAt`, `resolution`, `fps`, `aspectRatio`, `duration`, `stylePreset`, `assets`, `scenes`, `tracks`, `settings` |
-| Scene   | `id`, `name`, `start`, `duration`, `narration`, `stylePreset`, `layers`, `transitionIn`, `transitionOut`, `metadata`                                             |
-| Layer   | `id`, `type`, media-only `assetId`, `trackId`, `start`, `duration`, `position`, `scale`, `rotation`, `opacity`, `zIndex`, `animation`, typed `properties`        |
-| Track   | `id`, `name`, `type`, `order`, `visible`, `muted`, `locked`, `height`, `clips`                                                                                   |
-| Clip    | `id`, exactly one of `assetId`/`layerId`, `trackId`, `start`, `duration`, `sourceStart`, `sourceEnd`                                                             |
-| Asset   | `id`, basename `filename`, `type`, `mimeType`, `size`, `importedAt`, optional `duration`, `width`, `height`                                                      |
+| Entity  | Fields                                                                                                                                                                         |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Project | `schemaVersion`, `id`, `name`, `createdAt`, `updatedAt`, `resolution`, `fps`, `aspectRatio`, `duration`, `stylePreset`, `assets`, `scenes`, `tracks`, `settings`, `animations` |
+| Scene   | `id`, `name`, `start`, `duration`, `narration`, `stylePreset`, `layers`, `transitionIn`, `transitionOut`, `metadata`                                                           |
+| Layer   | `id`, `type`, media-only `assetId`, `trackId`, `start`, `duration`, `position`, `scale`, `rotation`, `opacity`, `zIndex`, `animation`, typed `properties`                      |
+| Track   | `id`, `name`, `type`, `order`, `visible`, `muted`, `locked`, `height`, `clips`                                                                                                 |
+| Clip    | `id`, exactly one of `assetId`/`layerId`, `trackId`, `start`, `duration`, `sourceStart`, `sourceEnd`                                                                           |
+| Asset   | `id`, basename `filename`, `type`, `mimeType`, `size`, `importedAt`, optional `duration`, `width`, `height`                                                                    |
 
 IDs are UUIDs. Scene/layer duplication creates new scene and layer IDs while retaining asset references and manual content. Asset/scene/track IDs are unique within their collection; layer IDs are unique across scenes. Derived clip IDs deliberately equal their layer IDs in a separate entity namespace.
 
 Layer types are `image`, `video`, `audio`, `text`, `shape`, `caption`. Media layers require a compatible declared asset. Image properties contain `fit`; playable properties contain `sourceStart`, `volume`, `muted`; text/caption properties contain plain `text`, `fontSize`, `fontFamily`, `color`; shape properties contain `shape`, `fill`, `stroke`, `strokeWidth`. No arbitrary HTML, CSS, URLs, scripts or commands are accepted as property fields. Text is rendered by React as text, never executed.
 
-Supported style identifiers are `default`, `minimal`, `cinematic`, `bold`. Animation presets are `none`, `fade-in`, `slide-up`. Transitions are `none`, `cut`, `fade`, with bounded durations. These are validated project data; there is no Remotion/composition renderer yet. Settings contain `backgroundColor`, `audioSampleRate` (44100/48000), and `snapToFrames` (reserved preference, not an active editing tool). Scene metadata contains plain notes and tags.
+Supported style identifiers are `default`, `minimal`, `cinematic`, `bold`. Legacy layer animation fields accept `none`, `fade-in`, `slide-up`; v3 motion uses `animations[clipId]` keyframes and preset provenance. Transitions are `none`, `cut`, `fade`, with bounded durations. These are validated project data; there is no Remotion/composition renderer yet. Settings contain `backgroundColor`, `audioSampleRate` (44100/48000), and `snapToFrames` (reserved preference, not an active editing tool). Scene metadata contains plain notes and tags.
 
 ## Timing and canonical ownership
 
@@ -45,7 +45,7 @@ Derived clips are serialized for interchange, but cannot disagree with their can
 
 ## Validation and import
 
-Schema versions 1 and 2 are accepted. Version 1 first passes its original strict structural and relational validation, then migrates to v2 for explicit review. IDs, exact seconds, source references and manual properties are preserved. Migration adds visible=true, muted=false, locked=false and height=36 to tracks, and changes non-playable clip source endpoints to null. A migrated open/import is dirty until saved as v2. Unknown fields/versions are rejected. Version 2 exports are not backward compatible with older MotionCraft versions. Every object is strict, so unsupported fields are reported rather than dropped. Validation checks references, media/track compatibility, unique IDs/orders, durations, source ranges, scene containment and derived timing. Resolution is 64-8192 pixels per axis; FPS supports 24/25/30/50/60; aspect ratios are 16:9, 9:16, 1:1 and 4:3 and must match the resolution. Timing is limited to 24 hours. Project JSON is limited to 5 MB, including exported formatted JSON.
+Schema versions 1, 2 and 3 are accepted. Versions 1 and 2 first pass their original strict structural and relational validation, then migrate to v3 for explicit review. IDs, exact seconds, source references and manual properties are preserved. Migration adds visible=true, muted=false, locked=false and height=36 to tracks, and changes non-playable clip source endpoints to null. A migrated open/import is dirty until saved as v3. Unknown fields/versions are rejected. Version 3 exports require an application that supports the animation map. Every object is strict, so unsupported fields are reported rather than dropped. Validation checks references, media/track compatibility, unique IDs/orders, durations, source ranges, scene containment and derived timing. Resolution is 64-8192 pixels per axis; FPS supports 24/25/30/50/60; aspect ratios are 16:9, 9:16, 1:1 and 4:3 and must match the resolution. Timing is limited to 24 hours. Project JSON is limited to 5 MB, including exported formatted JSON.
 
 The UI accepts pasted JSON or an uploaded file, displays path-specific errors, and presents a summary before replacement. Open uses the same validation and review step. Cancel keeps the current project and save destination. Confirmation explicitly warns about unsaved changes and resets history. Browser JSON import/export works without Electron; declared local media is unavailable there.
 

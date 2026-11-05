@@ -50,3 +50,10 @@ Add dated entries when making or changing significant technical decisions.
 - Use an ephemeral loopback server scoped to approved asset IDs and a random 256-bit token for headless media. Validate Host/Origin/methods and fingerprints on each request; do not enable file:// or disable web security.
 - Render to a unique sibling partial file, inspect H.264/AAC/dimensions/FPS/duration using bundled FFprobe, sync and atomically rename after confirming the destination has not changed. Cancellation/failure preserves existing output.
 - Resolve pinned Windows x64 FFmpeg/FFprobe binaries from Remotion's installed platform package, never PATH. Prepare/cache Chrome ahead of offline rendering. Production packaging, native runtime advisories and distribution licensing remain separate release gates.
+
+## Phase 6 animation slice decisions (2026-11-05)
+
+- Advance project schema to v3 with one clip-owned animation map, preserving existing clip/layer IDs and scene timing. Strict v1/v2 migration converts legacy motion to ordinary keys; save writes v3.
+- Use integer local frames, bounded transform values and deterministic named/Bezier easing. Presets generate editable keys, rather than a separate renderer. New shared CJS uses checked JSDoc for Electron compatibility. No dependency was added.
+- Preserve curves through timeline crop/split; regenerate key IDs for duplication/paste. Use the existing snapshot history and reject invalid/locked edits atomically.
+- Ship a tested animation vertical slice. Do not claim transitions, expanded text styling, dedicated caption timing or animated captions complete. Full Phase 6 acceptance remains open; see ANIMATION.md.

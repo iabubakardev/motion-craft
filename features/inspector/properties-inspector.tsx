@@ -1,4 +1,5 @@
-﻿import { ClipProperties } from "@/features/timeline/clip-properties";
+import { AnimationProperties } from "./animation-properties";
+import { ClipProperties } from "@/features/timeline/clip-properties";
 import type { MediaAsset } from "@/core/media/types";
 import { formatDuration, formatSize } from "@/features/media/library.cjs";
 import { MediaIcon } from "@/features/media/media-icon";
@@ -120,6 +121,7 @@ export function PropertiesInspector({
       </div>
       <ClipProperties document={doc} />
       <LayerProperties document={doc} />
+      <AnimationProperties document={doc} />
       <SceneProperties document={doc} />
     </aside>
   );

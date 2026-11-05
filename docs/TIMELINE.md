@@ -10,7 +10,7 @@ The project/history controller remains the document owner. Scene layers own rela
 
 Playable clips have numeric source ranges: left trims change source in, right trims change source out, moves preserve both, and splits retain the left ID and create a new right ID with continuous source ranges. Unknown-duration audio/video cannot be inserted or extended. Images start at five seconds and use null source endpoints; text/shape/caption content also uses null endpoints and can be trimmed within scene limits.
 
-Schema v2 requires track visibility/mute/lock/height and null non-playable source ranges. Version 1 is strictly validated first, migrated without changing IDs/timing/manual content, and presented for confirmation. Migrated documents are dirty until saved as v2. The bundled sample remains a v1 migration fixture. Older applications cannot read v2 exports. See [Project format](PROJECT_FORMAT.md).
+Schema v2 requires track visibility/mute/lock/height and null non-playable source ranges. Version 1 is strictly validated first, migrated without changing IDs/timing/manual content, and presented for confirmation. Schema v3 adds clip-owned animation keyframes (see ANIMATION.md); migrated documents are dirty until saved as v3. The bundled sample remains a v1 migration fixture. Older applications cannot read v3 exports. See [Project format](PROJECT_FORMAT.md).
 
 ## Tracks and edits
 

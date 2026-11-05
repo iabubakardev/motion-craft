@@ -43,7 +43,7 @@ test("strict versioned project validation and JSON round trip", () => {
     assert.ok(rejected.errors[0].path);
   }
   assert.equal(
-    parseProjectJSON(JSON.stringify({ ...project, schemaVersion: 3 })).errors[0].path,
+    parseProjectJSON(JSON.stringify({ ...project, schemaVersion: 4 })).errors[0].path,
     "schemaVersion",
   );
 });

@@ -10,6 +10,10 @@ const {
 const { rebuildProject } = require("../project/operations.cjs");
 const { secondsToFrames, framesToSeconds } = require("./time.cjs");
 
+const { motionSchema } = require("../animation/schema.cjs");
+const { cropKeys, stableId } = require("../animation/engine.cjs");
+const { clipFrames } = require("../animation/commands.cjs");
+
 const frame = z
   .number()
   .int()
@@ -21,7 +25,12 @@ const ids = z
   .max(1000)
   .refine((values) => new Set(values).size === values.length, "Selection IDs must be unique");
 const clipboardItemSchema = z
-  .object({ clip: clipSchema, layer: layerSchema.optional(), sceneId: idSchema.optional() })
+  .object({
+    clip: clipSchema,
+    layer: layerSchema.optional(),
+    sceneId: idSchema.optional(),
+    motion: motionSchema.optional(),
+  })
   .strict();
 const commandSchema = z.discriminatedUnion("type", [
   z
@@ -391,6 +400,7 @@ function copyClips(project, ids, index = createTimelineIndex(project)) {
     const item = requireClip(index, id);
     return structuredClone({
       clip: item.clip,
+      ...(project.animations[id] ? { motion: project.animations[id] } : {}),
       ...(item.layer ? { layer: item.layer, sceneId: item.scene?.id } : {}),
     });
   });
@@ -453,7 +463,45 @@ function executeTimelineCommand(project, input, timestamp) {
         .map((change) => change.clip),
     ],
   }));
-  const next = rebuildProject({ ...parsed, scenes, tracks }, timestamp);
+  const animations = { ...parsed.animations };
+  for (const id of plan.removed) delete animations[id];
+  if (command.type === "DuplicateClip" || command.type === "PasteClips") {
+    const items =
+      command.type === "DuplicateClip" ? copyClips(parsed, command.clipIds, index) : command.items;
+    items.forEach((item, i) => {
+      if (item.motion)
+        animations[command.newIds[i]] = {
+          ...item.motion,
+          keyframes: item.motion.keyframes.map((key) => ({
+            ...key,
+            id: stableId(`${command.newIds[i]}:${key.id}`),
+          })),
+        };
+    });
+  } else
+    for (const change of plan.changes) {
+      const oldId = command.type === "SplitClip" ? command.clipId : change.clip.id;
+      const old = index.clips.get(oldId)?.clip;
+      const motion = parsed.animations[oldId];
+      if (!old || !motion) continue;
+      if (command.type === "MoveClip") animations[change.clip.id] = motion;
+      else {
+        const offset =
+          command.type === "UpdateClipProperties"
+            ? 0
+            : secondsToFrames(change.clip.start, parsed.fps, "ceil") -
+              secondsToFrames(old.start, parsed.fps, "ceil");
+        animations[change.clip.id] = {
+          keyframes: cropKeys(
+            motion.keyframes,
+            offset,
+            offset + clipFrames(change.clip, parsed.fps) - 1,
+            change.clip.id,
+          ),
+        };
+      }
+    }
+  const next = rebuildProject({ ...parsed, animations, scenes, tracks }, timestamp);
   return projectSchema.parse({ ...next, updatedAt: timestamp });
 }
 

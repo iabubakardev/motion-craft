@@ -16,7 +16,9 @@ export function ClipBlock({
   onPointerDown,
   onTrim,
   onFocus,
+  children,
 }: {
+  children?: React.ReactNode;
   id: string;
   label: string;
   thumbnail?: string;
@@ -66,7 +68,8 @@ export function ClipBlock({
           className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
         />
       )}
-      <span className="relative truncate px-3">
+      {children}
+      <span className="pointer-events-none relative truncate px-3">
         {audio ? "A " : "V "}
         {label}
       </span>

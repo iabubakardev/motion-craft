@@ -1,6 +1,8 @@
 const { z } = require("zod");
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
+const { motionSchema } = require("../animation/schema.cjs");
+const { stableId } = require("../animation/engine.cjs");
 const MAX_JSON_BYTES = 5 * 1024 * 1024;
 const MAX_TIME = 86400;
 const idSchema = z.uuid();
@@ -222,9 +224,9 @@ const trackSchema = z
     clips: z.array(clipSchema).max(10000),
   })
   .strict();
-const projectSchema = z
+const projectV2Schema = z
   .object({
-    schemaVersion: z.literal(SCHEMA_VERSION),
+    schemaVersion: z.literal(2),
     id: idSchema,
     name,
     createdAt: z.iso.datetime(),
@@ -247,6 +249,71 @@ const projectSchema = z
   })
   .strict()
   .superRefine((project, ctx) => validateProjectRelations(project, ctx, 2));
+
+const projectSchema = projectV2Schema
+  .safeExtend({
+    schemaVersion: z.literal(SCHEMA_VERSION),
+    animations: z.record(idSchema, motionSchema),
+  })
+  .superRefine((project, ctx) => {
+    const clips = new Map(
+      project.tracks.flatMap((track) => track.clips.map((clip) => [clip.id, { clip, track }])),
+    );
+    const ids = new Set();
+    for (const [clipId, motion] of Object.entries(project.animations)) {
+      const found = clips.get(clipId);
+      const issue = (message) =>
+        ctx.addIssue({ code: "custom", path: ["animations", clipId], message });
+      if (!found) {
+        issue("Animation references a missing clip");
+        continue;
+      }
+      if (found.track.type === "audio") issue("Audio clips do not support visual animation");
+      const count =
+        Math.ceil((found.clip.start + found.clip.duration) * project.fps - 1e-8) -
+        Math.ceil(found.clip.start * project.fps - 1e-8);
+      const channels = new Set();
+      for (const key of motion.keyframes) {
+        if (ids.has(key.id)) issue("Keyframe IDs must be unique");
+        ids.add(key.id);
+        const location = `${key.property}:${key.frame}`;
+        if (channels.has(location)) issue("Only one keyframe per property and frame is allowed");
+        channels.add(location);
+        if (key.frame >= count) issue("Keyframe exceeds the visible clip duration");
+      }
+      if (motion.preset && motion.preset.durationFrames > count)
+        issue("Preset exceeds clip duration");
+    }
+  });
+/** @param {import("zod").infer<typeof projectV2Schema>} project @returns {import("./types").Project} */
+function migrateV2(project) {
+  const animations = {};
+  for (const scene of project.scenes)
+    for (const layer of scene.layers) {
+      if (layer.type === "audio" || layer.animation.preset === "none") continue;
+      const total =
+        Math.ceil((scene.start + layer.start + layer.duration) * project.fps - 1e-8) -
+        Math.ceil((scene.start + layer.start) * project.fps - 1e-8);
+      if (total < 1) continue;
+      const length = Math.max(1, Math.round(layer.animation.duration * project.fps));
+      const end = Math.min(total - 1, length);
+      const fade = layer.animation.preset === "fade-in";
+      const property = fade ? "opacity" : "y";
+      const base = fade ? layer.opacity : layer.position.y;
+      animations[layer.id] = {
+        keyframes: [...new Set([0, end])].map((frame, index) => ({
+          id: stableId(`${layer.id}:legacy:${index}`),
+          property,
+          frame,
+          value: fade
+            ? (base * frame) / length
+            : base + project.resolution.height * 0.1 * (1 - frame / length),
+          easing: { type: "linear" },
+        })),
+      };
+    }
+  return { ...project, schemaVersion: 3, animations };
+}
 
 function validateProjectRelations(project, ctx, version) {
   const issue = (path, message) => ctx.addIssue({ code: "custom", path, message });
@@ -380,7 +447,7 @@ const legacyTrackSchema = trackSchema
   .strict();
 const legacyProjectSchema = z
   .object({
-    ...projectSchema.shape,
+    ...projectV2Schema.shape,
     schemaVersion: z.literal(1),
     tracks: z.array(legacyTrackSchema).max(64),
   })
@@ -423,20 +490,37 @@ function validateProject(value) {
       })),
     };
     migratedFrom = 1;
-  } else if (value && typeof value === "object" && value.schemaVersion !== SCHEMA_VERSION) {
+  } else if (
+    value &&
+    typeof value === "object" &&
+    value.schemaVersion !== SCHEMA_VERSION &&
+    value.schemaVersion !== 2
+  ) {
     return {
       success: false,
       errors: [
         {
           path: "schemaVersion",
-          message: "Supported schema versions are 1 (migrated with review) and 2.",
+          message: "Supported schema versions are 1, 2 (migrated with review), and 3.",
         },
       ],
     };
   }
+  if (value && typeof value === "object" && value.schemaVersion === 2) {
+    const legacy = projectV2Schema.safeParse(value);
+    if (!legacy.success)
+      return {
+        success: false,
+        errors: legacy.error.issues
+          .slice(0, 100)
+          .map((entry) => ({ path: entry.path.join(".") || "project", message: entry.message })),
+      };
+    value = migrateV2(legacy.data);
+    migratedFrom = migratedFrom || 2;
+  }
   const result = projectSchema.safeParse(value);
   if (result.success)
-    return { success: true, project: result.data, ...(migratedFrom ? { migratedFrom: 1 } : {}) };
+    return { success: true, project: result.data, ...(migratedFrom ? { migratedFrom } : {}) };
   return {
     success: false,
     errors: result.error.issues
@@ -486,6 +570,7 @@ module.exports = {
   trackSchema,
   projectSchema,
   legacyProjectSchema,
+  projectV2Schema,
   validateProject,
   parseProjectJSON,
   serializeProject,

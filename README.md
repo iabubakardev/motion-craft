@@ -104,7 +104,7 @@ Imports reference originals without copying them. Duplicate paths retain asset I
 
 ## Saving and importing projects
 
-Use Save project / Save as to write `.motioncraft.json` through Electron native dialogs. Open project validates a file and shows a summary before replacement. Import JSON accepts pasted or uploaded schema v1/v2 JSON (v1 is validated and migrated for review) and also requires replacement confirmation; Export JSON downloads the validated, path-free document. Ctrl+S saves and Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y undo/redo outside text inputs. Ctrl+O continues to import media.
+Use Save project / Save as to write `.motioncraft.json` through Electron native dialogs. Open project validates a file and shows a summary before replacement. Import JSON accepts pasted or uploaded schema v1/v2/v3 JSON (v1/v2 are validated and migrated for review) and also requires replacement confirmation; Export JSON downloads the validated, path-free document. Ctrl+S saves and Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y undo/redo outside text inputs. Ctrl+O continues to import media.
 
 Unsaved edits are tracked. New/open/import replacement explicitly warns before discarding them; closing or reloading a dirty desktop document asks whether to keep editing or discard. There is no autosave or crash recovery. Always save before exiting. A reload starts a new unsaved document and clears the previous save target.
 
@@ -145,3 +145,5 @@ npm run test:render
 `render:setup` prepares the headless browser (network required for the initial download) and checks Remotion's bundled media binaries. Rendering then runs locally without a cloud service. The current binary adapter supports Windows x64; it does not depend on FFmpeg being in PATH. A packaged offline runtime, broader codec testing and Remotion license review before distribution remain release gates. See [Rendering architecture, timing, security and limitations](docs/RENDERING.md). The deterministic [render sample](public/render-sample.motioncraft.json) contains generated graphics and requires no external media.
 
 Workspace stabilization adds compact icon controls, a fitted artboard, a focus-canvas mode, automatic timeline fit/follow and a dedicated transport. See [Workspace usability review](docs/WORKSPACE_REVIEW.md) for the research, fixes, verification and remaining UI priorities.
+
+Animation keyframes and presets are available in the inspector and timeline. Projects now save as schema v3; v1/v2 imports migrate with review. See [Animation controls and Phase 6 acceptance](docs/ANIMATION.md), import the [media-free animation sample](public/animation-sample.motioncraft.json), and run `npm run test:animation` for the Player/MP4 regression. Transitions and dedicated caption effects remain incomplete.

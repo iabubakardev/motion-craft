@@ -246,6 +246,7 @@ function Workspace() {
             !!doc.deleteSceneId
           }
           execute={doc.executeTimeline}
+          executeMotion={doc.executeMotion}
           onScene={doc.selectScene}
           onLayer={doc.selectLayer}
           onAsset={doc.selectMedia}
@@ -298,7 +299,8 @@ function Workspace() {
           </p>
           {doc.candidate.migratedFrom && (
             <p>
-              Schema v1 has been migrated to v2. Saving writes v2 track controls and source ranges.
+              Schema v{doc.candidate.migratedFrom} has been migrated to v3. Saving preserves
+              validated animation keyframes.
             </p>
           )}
           <p>

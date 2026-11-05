@@ -20,6 +20,10 @@ function assertLockedTracksUnchanged(previous, next) {
       JSON.stringify(before) !== JSON.stringify(after) ||
       before.some(
         (clip) =>
+          JSON.stringify(previous.animations[clip.id]) !== JSON.stringify(next.animations[clip.id]),
+      ) ||
+      before.some(
+        (clip) =>
           clip.layerId &&
           JSON.stringify(oldLayers.get(clip.layerId)) !==
             JSON.stringify(newLayers.get(clip.layerId)),

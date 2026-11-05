@@ -11,7 +11,7 @@ const openResultSchema = z.discriminatedUnion("status", [
       project: projectSchema,
       filename: z.string(),
       candidateId: idSchema,
-      migratedFrom: z.literal(1).optional(),
+      migratedFrom: z.union([z.literal(1), z.literal(2)]).optional(),
     })
     .strict(),
 ]);

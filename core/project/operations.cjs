@@ -5,7 +5,8 @@ const uuid = () => globalThis.crypto.randomUUID();
 function createProject(options = {}) {
   const now = options.now || new Date().toISOString();
   return projectSchema.parse({
-    schemaVersion: 2,
+    schemaVersion: 3,
+    animations: {},
     id: options.id || uuid(),
     name: "Untitled project",
     createdAt: now,
@@ -66,7 +67,18 @@ function rebuildProject(project, timestamp = new Date().toISOString()) {
     (end, track) => Math.max(end, ...track.clips.map((clip) => clip.start + clip.duration)),
     start,
   );
-  return projectSchema.parse({ ...project, scenes, tracks, duration, updatedAt: timestamp });
+  const clipIds = new Set(tracks.flatMap((track) => track.clips.map((clip) => clip.id)));
+  const animations = Object.fromEntries(
+    Object.entries(project.animations).filter(([id]) => clipIds.has(id)),
+  );
+  return projectSchema.parse({
+    ...project,
+    animations,
+    scenes,
+    tracks,
+    duration,
+    updatedAt: timestamp,
+  });
 }
 
 /** @param {import('./types').Project} project @param {string} sceneId */
@@ -124,10 +136,19 @@ function duplicateScene(project, sceneId) {
   const scene = structuredClone(requireScene(project, sceneId));
   scene.id = uuid();
   scene.name = `${scene.name.slice(0, 115)} copy`;
-  scene.layers = scene.layers.map((layer) => ({ ...layer, id: uuid() }));
+  const animations = { ...project.animations };
+  scene.layers = scene.layers.map((layer) => {
+    const id = uuid();
+    if (animations[layer.id])
+      animations[id] = {
+        ...structuredClone(animations[layer.id]),
+        keyframes: animations[layer.id].keyframes.map((key) => ({ ...key, id: uuid() })),
+      };
+    return { ...layer, id };
+  });
   const scenes = [...project.scenes];
   scenes.splice(scenes.findIndex((item) => item.id === sceneId) + 1, 0, scene);
-  return rebuildProject({ ...project, scenes });
+  return rebuildProject({ ...project, scenes, animations });
 }
 
 /** @param {import('./types').Project} project @param {string} sceneId @param {number} toIndex */

@@ -1,4 +1,6 @@
 "use client";
+import { KeyframeMarkers } from "./keyframe-markers";
+import type { ProjectDocumentController } from "@/features/projects/use-project-document";
 import { EditorIcon } from "@/features/editor/editor-icon";
 import { memo, useEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -26,6 +28,7 @@ interface Props {
   activeSceneId: string | null;
   documentGeneration: number;
   busy: boolean;
+  executeMotion: ProjectDocumentController["executeMotion"];
   execute: (command: TimelineCommand, expected?: Project) => boolean;
   onScene: (id: string) => void;
   onLayer: (sceneId: string, layerId: string) => void;
@@ -48,6 +51,7 @@ export const TimelinePanel = memo(function TimelinePanel({
   documentGeneration,
   busy,
   execute,
+  executeMotion,
   onScene,
   onLayer,
   onAsset,
@@ -583,7 +587,15 @@ export const TimelinePanel = memo(function TimelinePanel({
                           if (item.scene && item.layer) onLayer(item.scene.id, item.layer.id);
                           else if (item.asset) onAsset(item.asset.id);
                         }}
-                      />
+                      >
+                        <KeyframeMarkers
+                          project={project}
+                          clip={clip}
+                          zoom={zoom}
+                          busy={busy}
+                          execute={executeMotion}
+                        />
+                      </ClipBlock>
                     );
                   })}
                 <TrackGhost trackId={track.id} zoom={zoom} />

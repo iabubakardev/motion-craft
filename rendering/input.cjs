@@ -52,6 +52,7 @@ function buildComposition(value) {
               durationInFrames: end - from,
               sourceStart,
               layer,
+              motion: project.animations[clip.id],
               assetId,
               src: assetId ? input.sources[assetId] || null : null,
               label: asset?.filename || type || "Clip",

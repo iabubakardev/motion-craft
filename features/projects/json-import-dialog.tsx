@@ -7,7 +7,7 @@ export function JsonImportDialog({
   onValidated,
   onClose,
 }: {
-  onValidated: (project: Project, migratedFrom?: 1) => void;
+  onValidated: (project: Project, migratedFrom?: 1 | 2) => void;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -35,8 +35,8 @@ export function JsonImportDialog({
     >
       <h2 className="text-sm font-semibold">Import project JSON</h2>
       <p className="mt-2 text-xs leading-5 text-[var(--editor-muted)]">
-        Paste or upload project JSON (maximum 5 MB). Version 1 is validated and migrated to v2 for
-        review; saved documents use v2.
+        Paste or upload project JSON (maximum 5 MB). Versions 1 and 2 are validated and migrated to
+        v3 for review; saved documents use v3.
       </p>
       <div className="mt-4 flex items-center justify-between gap-3">
         <label className="text-xs">

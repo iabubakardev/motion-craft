@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 3,
+  "id": "00000000-0000-4000-8000-000000000100",
+  "name": "Animation sample",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "resolution": {
+    "width": 320,
+    "height": 180
+  },
+  "fps": 30,
+  "aspectRatio": "16:9",
+  "duration": 2,
+  "stylePreset": "default",
+  "assets": [],
+  "scenes": [
+    {
+      "id": "00000000-0000-4000-8000-000000000120",
+      "name": "Sample scene",
+      "start": 0,
+      "duration": 2,
+      "narration": "",
+      "stylePreset": "default",
+      "layers": [
+        {
+          "id": "00000000-0000-4000-8000-000000000121",
+          "trackId": "00000000-0000-4000-8000-000000000112",
+          "start": 0,
+          "duration": 2,
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": 1,
+          "rotation": 0,
+          "opacity": 1,
+          "zIndex": 0,
+          "animation": {
+            "preset": "none",
+            "duration": 0
+          },
+          "type": "shape",
+          "properties": {
+            "shape": "rectangle",
+            "fill": "#20c080",
+            "stroke": "#000000",
+            "strokeWidth": 0
+          }
+        }
+      ],
+      "transitionIn": {
+        "type": "none",
+        "duration": 0
+      },
+      "transitionOut": {
+        "type": "none",
+        "duration": 0
+      },
+      "metadata": {
+        "notes": "Deterministic render fixture",
+        "tags": []
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000110",
+      "name": "V4",
+      "type": "video",
+      "order": 0,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000111",
+      "name": "V3",
+      "type": "video",
+      "order": 1,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000112",
+      "name": "V2",
+      "type": "video",
+      "order": 2,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": [
+        {
+          "id": "00000000-0000-4000-8000-000000000121",
+          "layerId": "00000000-0000-4000-8000-000000000121",
+          "trackId": "00000000-0000-4000-8000-000000000112",
+          "start": 0,
+          "duration": 2,
+          "sourceStart": null,
+          "sourceEnd": null
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000113",
+      "name": "V1",
+      "type": "video",
+      "order": 3,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000114",
+      "name": "A1",
+      "type": "audio",
+      "order": 4,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000115",
+      "name": "A2",
+      "type": "audio",
+      "order": 5,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000116",
+      "name": "A3",
+      "type": "audio",
+      "order": 6,
+      "visible": true,
+      "muted": false,
+      "locked": false,
+      "height": 36,
+      "clips": []
+    }
+  ],
+  "settings": {
+    "backgroundColor": "#11151c",
+    "audioSampleRate": 48000,
+    "snapToFrames": true
+  },
+  "animations": {
+    "00000000-0000-4000-8000-000000000121": {
+      "keyframes": [
+        {
+          "id": "57314fa3-1244-5668-8526-0ce1c178bbf6",
+          "property": "x",
+          "frame": 0,
+          "value": -60,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "60a7daff-1ed3-505a-86ed-c3995c1c6c84",
+          "property": "x",
+          "frame": 59,
+          "value": 60,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "80b77404-08e5-53d7-8e98-905a4805a15d",
+          "property": "y",
+          "frame": 0,
+          "value": -10,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "59c47076-e35b-50d3-8923-c048c8d04ac5",
+          "property": "y",
+          "frame": 59,
+          "value": 10,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "a0a4cc2b-73b5-5ae6-85d2-704d52b45ae0",
+          "property": "scaleX",
+          "frame": 0,
+          "value": 0.8,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "7974cbe7-0158-52b4-823a-40f596f718f2",
+          "property": "scaleX",
+          "frame": 59,
+          "value": 1.2,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "2a2b87ac-7b80-5e4d-8e07-8ce64955784f",
+          "property": "scaleY",
+          "frame": 0,
+          "value": 1.2,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "737ee3fe-e2a3-5af5-80ef-88b4db7fc2eb",
+          "property": "scaleY",
+          "frame": 59,
+          "value": 0.8,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "22680b6f-9ef2-536e-8cb7-4d793a6ade30",
+          "property": "rotation",
+          "frame": 0,
+          "value": 0,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "f3bdc30b-8b68-579c-8896-27510b486702",
+          "property": "rotation",
+          "frame": 59,
+          "value": 90,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "77126f82-5ff5-5625-82b8-0198c0268a9b",
+          "property": "opacity",
+          "frame": 0,
+          "value": 0.3,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        },
+        {
+          "id": "a8fe57d0-afc1-51ed-84b6-a5caa2b3c897",
+          "property": "opacity",
+          "frame": 59,
+          "value": 1,
+          "easing": {
+            "type": "ease-in-out"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -312,7 +312,7 @@ test("v1 migration preserves IDs, exact timing, manual properties and rejects un
   const result = parseProjectJSON(JSON.stringify(sample));
   assert.equal(result.success, true);
   assert.equal(result.migratedFrom, 1);
-  assert.equal(result.project.schemaVersion, 2);
+  assert.equal(result.project.schemaVersion, 3);
   assert.deepEqual(result.project.scenes, sample.scenes);
   assert.deepEqual(result.project.assets, sample.assets);
   assert.equal(result.project.duration, sample.duration);

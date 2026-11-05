@@ -130,3 +130,7 @@ ESLint prevents Node built-in/Electron imports in renderer, platform and core ru
 ## Workspace synchronization refinement
 
 The existing timeline Zustand store also owns monitor mode and timeline playback status. Timeline is the default; library Source inspection is independent and timeline interactions reactivate composition preview. `use-timeline-player.ts` connects listeners through the Player callback ref, with guarded frame publication and a separate paused cursor beyond the render duration. `composition-transport.tsx` uses focused subscriptions. Canvas focus is temporary workspace state and does not rewrite persisted panel dimensions. See [Workspace review](WORKSPACE_REVIEW.md).
+
+## Phase 6 animation slice
+
+Schema v3 adds a validated clip-ID animation map. `core/animation` owns pure easing, interpolation, preset generation and immutable commands; inspector/timeline controls use the existing document history. Trims/splits crop curves, clipboard and scene duplication preserve motion with new IDs. The shared Remotion composition evaluates the same frame-local keys for Player and MP4. v1/v2 migrate before review; no new native API or dependency was added. Transition and caption expansion remain pending. See [Animation](ANIMATION.md).

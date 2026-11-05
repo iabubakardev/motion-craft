@@ -50,7 +50,7 @@ app.once("browser-window-created", (_event, window) => {
       );
     const edit = (label, value) =>
       evaluate(
-        `(() => { const e=document.querySelector(${JSON.stringify(`[aria-label="${label}"]`)}); e.focus(); e.value=${JSON.stringify(String(value))}; e.blur(); })()`,
+        `(() => { const e=document.querySelector(${JSON.stringify(`[aria-label="${label}"]`)}); e.value=${JSON.stringify(String(value))}; e.dispatchEvent(new FocusEvent("focusout",{bubbles:true})); })()`,
       );
     const exported = () =>
       evaluate(`(async () => {
@@ -206,7 +206,7 @@ app.once("browser-window-created", (_event, window) => {
       });
       window.webContents.debugger.detach();
       await waitFor(
-        `JSON.parse(document.querySelector('textarea[aria-label="Project JSON"]').value).schemaVersion === 2`,
+        `JSON.parse(document.querySelector('textarea[aria-label="Project JSON"]').value).schemaVersion === 3`,
       );
       await click("Validate and review");
       await waitFor(`!!document.querySelector('dialog[aria-label="Review project import"]')`);
@@ -277,6 +277,9 @@ app.once("browser-window-created", (_event, window) => {
       );
       await waitFor(`!!document.querySelector('input[aria-label="Scene name"]')`);
       await edit("Scene name", "Imported edit");
+      await waitFor(
+        `document.querySelector('[data-testid="save-indicator"]').textContent === 'Unsaved changes'`,
+      );
       await click("Save project");
       await waitFor(
         `document.querySelector('[data-testid="save-indicator"]').textContent === 'Saved'`,

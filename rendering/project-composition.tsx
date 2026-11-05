@@ -11,6 +11,8 @@ import {
   cancelRender,
 } from "remotion";
 import type { CSSProperties } from "react";
+import { pose } from "../core/animation/engine.cjs";
+import { basePose } from "../core/animation/commands.cjs";
 import { buildComposition } from "./input.cjs";
 import type { RenderInput, CompositionClip } from "./types";
 
@@ -52,19 +54,18 @@ function ClipContent({ clip }: { clip: CompositionClip }) {
     if (getRemotionEnvironment().isRendering) cancelRender(error);
     else setDecodeFailed(true);
   };
-  const { fps, width, height } = useVideoConfig(),
+  const { width, height } = useVideoConfig(),
     frame = useCurrentFrame();
   const layer = clip.layer;
-  const animationFrames = layer ? Math.max(1, Math.round(layer.animation.duration * fps)) : 1;
-  const progress = Math.min(1, Math.max(0, frame / animationFrames));
+  const transform = pose(clip.motion?.keyframes ?? [], basePose(layer), frame);
   const style: CSSProperties = {
     position: "absolute",
     width: "100%",
     height: "100%",
-    opacity: (layer?.opacity ?? 1) * (layer?.animation.preset === "fade-in" ? progress : 1),
-    translate: `${layer?.position.x ?? 0}px ${(layer?.position.y ?? 0) + (layer?.animation.preset === "slide-up" ? (1 - progress) * height * 0.1 : 0)}px`,
-    scale: layer?.scale ?? 1,
-    rotate: `${layer?.rotation ?? 0}deg`,
+    opacity: transform.opacity,
+    translate: `${transform.x}px ${transform.y}px`,
+    scale: `${transform.scaleX} ${transform.scaleY}`,
+    rotate: `${transform.rotation}deg`,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
