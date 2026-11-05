@@ -36,6 +36,7 @@ export function useClipGesture(
     initial.setSelection(ids);
     const item = index.clips.get(id);
     if (!item || item.track.locked) {
+      initial.setSelection([id]);
       initial.setMessage("Unlock the track before editing.");
       return;
     }
@@ -54,8 +55,9 @@ export function useClipGesture(
       const view = viewport.current;
       if (!view) return;
       const rect = view.getBoundingClientRect();
-      if (x > rect.right - 28) view.scrollLeft += 12;
-      if (x < rect.left + 206) view.scrollLeft -= 12;
+      moved ||= Math.abs(x - startX) > 3;
+      if (moved && x > rect.right - 28) view.scrollLeft += 12;
+      if (moved && x < rect.left + 206) view.scrollLeft -= 12;
       const delta = pixelsToFrames(
         x - startX + view.scrollLeft - scroll,
         initial.zoom,
@@ -149,6 +151,7 @@ export function useClipGesture(
       cleanup();
       if (moved && valid && command) execute(command, project);
       else if (moved && error) store.getState().setMessage(error);
+      else if (!moved && !edge) store.getState().setSelection([id]);
     };
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") {

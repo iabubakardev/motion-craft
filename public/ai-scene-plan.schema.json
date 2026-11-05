@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "fps": {
+      "anyOf": [
+        {
+          "type": "number",
+          "const": 24
+        },
+        {
+          "type": "number",
+          "const": 25
+        },
+        {
+          "type": "number",
+          "const": 30
+        },
+        {
+          "type": "number",
+          "const": 50
+        },
+        {
+          "type": "number",
+          "const": 60
+        }
+      ]
+    },
+    "aspectRatio": {
+      "type": "string",
+      "enum": ["16:9", "9:16", "1:1", "4:3"]
+    },
+    "style": {
+      "type": "string",
+      "enum": ["default", "minimal", "cinematic", "bold"]
+    },
+    "timing": {
+      "type": "string",
+      "enum": ["narration", "estimated"]
+    },
+    "duration": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 86400
+    },
+    "transcript": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "number",
+              "const": 1
+            },
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "sourceAssetId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "language": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "duration": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 86400
+            },
+            "model": {
+              "type": "object",
+              "properties": {
+                "engine": {
+                  "type": "string",
+                  "const": "faster-whisper"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "device": {
+                  "type": "string",
+                  "const": "cpu"
+                },
+                "computeType": {
+                  "type": "string",
+                  "const": "int8"
+                }
+              },
+              "required": ["engine", "name", "device", "computeType"],
+              "additionalProperties": false
+            },
+            "segments": {
+              "minItems": 1,
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "start": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 86400
+                  },
+                  "end": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 86400
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "words": {
+                    "maxItems": 3000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "start": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 86400
+                        },
+                        "end": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 86400
+                        },
+                        "probability": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "required": ["text", "start", "end"],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": ["id", "start", "end", "text"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "sourceAssetId",
+            "language",
+            "text",
+            "duration",
+            "model",
+            "segments"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "scenes": {
+      "minItems": 1,
+      "maxItems": 512,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 86400
+          },
+          "end": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 86400
+          },
+          "narration": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "visualDescription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "keywords": {
+            "minItems": 1,
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "assetType": {
+            "type": "string",
+            "enum": ["image", "video"]
+          },
+          "assetId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "animation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "none"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "fade-in",
+                  "fade-out",
+                  "slide-left",
+                  "slide-right",
+                  "slide-up",
+                  "slide-down",
+                  "zoom-in",
+                  "zoom-out",
+                  "pan",
+                  "pop-in",
+                  "documentary-zoom"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "start",
+          "end",
+          "narration",
+          "visualDescription",
+          "keywords",
+          "assetType",
+          "assetId",
+          "animation"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "id",
+    "name",
+    "fps",
+    "aspectRatio",
+    "style",
+    "timing",
+    "duration",
+    "transcript",
+    "scenes"
+  ],
+  "additionalProperties": false
+}

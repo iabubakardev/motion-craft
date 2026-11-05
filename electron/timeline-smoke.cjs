@@ -164,6 +164,132 @@ app.once("browser-window-created", (_event, window) => {
       console.log(
         "PASS: real captured pointer move/trim, one-step undo/redo, inspector timing and frame-playhead split",
       );
+      const left = project.tracks.flatMap((t) => t.clips).find((c) => c.start === 3),
+        right = project.tracks.flatMap((t) => t.clips).find((c) => c.start === 4);
+      assert.ok(left && right);
+      assert.equal(
+        await evaluate(
+          `document.querySelector('[data-clip-id="${right.id}"]').getAttribute('aria-pressed')`,
+        ),
+        "true",
+      );
+      await key("key:'Delete'");
+      assert.deepEqual(
+        (await exported()).tracks.flatMap((t) => t.clips).map((c) => c.id),
+        [left.id],
+      );
+      await label("Undo");
+      // A real click collapses an existing split/group selection without an outside click.
+      await evaluate(
+        `document.querySelector('[data-clip-id="${left.id}"]').click();document.querySelector('[data-clip-id="${right.id}"]').dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true,detail:0}));`,
+      );
+      assert.equal(
+        await evaluate(`document.querySelectorAll('[data-clip-id][aria-pressed="true"]').length`),
+        2,
+      );
+      await evaluate(
+        `(()=>{const clip=document.querySelector('[data-clip-id="${right.id}"]'),rect=clip.getBoundingClientRect(),capture=clip.setPointerCapture;clip.setPointerCapture=()=>{};try{clip.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerId:99,button:0,clientX:rect.x+rect.width/2,clientY:rect.y+rect.height/2}));window.dispatchEvent(new PointerEvent('pointerup',{pointerId:99,button:0,clientX:rect.x+rect.width/2,clientY:rect.y+rect.height/2}));}finally{clip.setPointerCapture=capture;}})()`,
+      );
+      assert.equal(
+        await evaluate(`document.querySelectorAll('[data-clip-id][aria-pressed="true"]').length`),
+        1,
+      );
+      const context = async (id) => {
+        await evaluate(
+          `new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`,
+        );
+        await evaluate(
+          `document.querySelector('[data-clip-id="${id}"]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:window.innerWidth-2,clientY:window.innerHeight-2}))`,
+        );
+        await waitFor(
+          `!!document.querySelector('[role="menu"][aria-label="Timeline context menu"]')`,
+        );
+      };
+      await context(left.id);
+      assert.equal(
+        await evaluate(
+          `document.querySelector('[data-clip-id="${left.id}"]').getAttribute('aria-pressed')`,
+        ),
+        "true",
+      );
+      assert.ok(
+        await evaluate(
+          `(()=>{const r=document.querySelector('[role="menu"]').getBoundingClientRect();return r.right<=innerWidth&&r.bottom<=innerHeight;})()`,
+        ),
+      );
+      assert.equal(
+        await evaluate(`getComputedStyle(document.querySelector('[role="menu"]')).backgroundColor`),
+        "rgb(27, 34, 44)",
+      );
+      window.setMinimumSize(120, 120);
+      for (const [width, height] of [
+        [360, 300],
+        [180, 160],
+      ]) {
+        window.setContentSize(width, height);
+        await waitFor(`innerWidth===${width}&&innerHeight===${height}`);
+        await context(left.id);
+        assert.ok(
+          await evaluate(
+            `(()=>{const m=document.querySelector('[role="menu"]'),r=m.getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&m.scrollWidth<=m.clientWidth+1&&m.querySelectorAll('[role="menuitem"]').length===6;})()`,
+          ),
+        );
+        await evaluate(
+          `document.querySelector('[role="menu"]').dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}))`,
+        );
+        assert.ok(
+          await evaluate(
+            `(()=>{const m=document.querySelector('[role="menu"]'),last=m.querySelector('[role="menuitem"]:last-child'),r=last.getBoundingClientRect(),b=m.getBoundingClientRect();return document.activeElement===last&&r.top>=b.top&&r.bottom<=b.bottom;})()`,
+          ),
+        );
+      }
+      window.setContentSize(1440, 900);
+      await waitFor(`innerWidth===1440&&innerHeight===900`);
+      await context(left.id);
+      console.log(
+        "PASS: context menu is opaque, fits narrow/short screens, wraps without horizontal clipping and scrolls to every action",
+      );
+      await evaluate(
+        `document.querySelector('[role="menu"]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`,
+      );
+      assert.equal(await evaluate(`document.querySelector('[role="menu"]')===null`), true);
+      assert.equal(
+        await evaluate(`document.querySelectorAll('[data-clip-id][aria-pressed="true"]').length`),
+        1,
+      );
+      await context(right.id);
+      await evaluate(
+        `Array.from(document.querySelectorAll('[role="menuitem"]')).find(b=>b.textContent.startsWith('Delete')).click()`,
+      );
+      assert.deepEqual(
+        (await exported()).tracks.flatMap((t) => t.clips).map((c) => c.id),
+        [left.id],
+      );
+      await label("Undo");
+      await label(`Toggle lock ${track.name}`);
+      await context(right.id);
+      assert.equal(
+        await evaluate(
+          `Array.from(document.querySelectorAll('[role="menuitem"]')).find(b=>b.textContent.startsWith('Delete')).disabled`,
+        ),
+        true,
+      );
+      assert.equal(
+        await evaluate(
+          `Array.from(document.querySelectorAll('[role="menuitem"]')).find(b=>b.textContent.startsWith('Copy')).disabled`,
+        ),
+        false,
+      );
+      await evaluate(
+        `document.querySelector('[role="menu"]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`,
+      );
+      await label(`Toggle lock ${track.name}`);
+      console.log(
+        "PASS: split then immediate Delete, click-to-select one segment, right-click target/delete, lock-aware menu, viewport bounds and Escape",
+      );
+      await evaluate(
+        `document.querySelector('[data-clip-id="${left.id}"]').click();document.querySelector('[data-clip-id="${right.id}"]').dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true,detail:0}));`,
+      );
       await key("key:'c',ctrlKey:true");
       await evaluate(
         `(()=>{const e=document.querySelector('[aria-label="Timeline timecode"]');e.value='00:00:10:00';e.form.requestSubmit();})()`,

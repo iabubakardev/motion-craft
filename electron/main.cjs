@@ -8,6 +8,7 @@ const {
 } = require("./security.cjs");
 const { createMediaLibrary } = require("./media-library.cjs");
 const { registerMediaIPC } = require("./ipc/media.cjs");
+const { registerAIIPC } = require("./ipc/ai.cjs");
 const { registerRenderIPC } = require("./ipc/render.cjs");
 const { registerProjectIPC } = require("./ipc/projects.cjs");
 
@@ -108,7 +109,8 @@ app
     protocol.handle("motioncraft-media", (request) => mediaLibrary.respond(request));
     registerMediaIPC(mediaLibrary);
     registerProjectIPC(mediaLibrary);
-    registerRenderIPC(mediaLibrary);
+    const renderJobs = registerRenderIPC(mediaLibrary, () => aiJobs.isBusy());
+    const aiJobs = registerAIIPC(mediaLibrary, () => renderJobs.isBusy());
     ipcMain.handle("app:getVersion", (event, ...args) => {
       const window = BrowserWindow.fromWebContents(event.sender);
       validateVersionRequest(event, window?.webContents, args);

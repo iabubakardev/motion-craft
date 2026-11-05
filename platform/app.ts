@@ -1,3 +1,4 @@
+import type { AIJob, AIRequest } from "./ai";
 import type { RenderJob } from "@/platform/render";
 import type { MediaAsset, MediaImportResult, MediaMetadata } from "@/core/media/types";
 import type { z } from "zod";
@@ -10,6 +11,11 @@ import type {
 
 export interface DesktopBridge {
   getAppVersion: () => Promise<string>;
+  ai: {
+    start: (request: AIRequest) => Promise<AIJob>;
+    status: () => Promise<AIJob | null>;
+    cancel: (id: string) => Promise<AIJob | null>;
+  };
   render: {
     start: (project: Project) => Promise<RenderJob | null>;
     status: () => Promise<RenderJob | null>;

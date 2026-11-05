@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "id": "10000000-0000-4000-8000-000000000001",
+  "name": "AI production",
+  "fps": 30,
+  "aspectRatio": "16:9",
+  "style": "default",
+  "timing": "estimated",
+  "duration": 4.4,
+  "transcript": null,
+  "scenes": [
+    {
+      "id": "6d0708ef-9791-5dc8-86af-57b5c5d7640e",
+      "start": 0,
+      "end": 4.4,
+      "narration": "Sunlight filters through a forest. A river flows between the trees.",
+      "visualDescription": "Sunlight filtering through forest trees beside a river.",
+      "keywords": ["forest", "river", "sunlight"],
+      "assetType": "image",
+      "assetId": null,
+      "animation": "fade-in"
+    }
+  ]
+}

@@ -134,3 +134,11 @@ The existing timeline Zustand store also owns monitor mode and timeline playback
 ## Phase 6 animation slice
 
 Schema v3 adds a validated clip-ID animation map. `core/animation` owns pure easing, interpolation, preset generation and immutable commands; inspector/timeline controls use the existing document history. Trims/splits crop curves, clipboard and scene duplication preserve motion with new IDs. The shared Remotion composition evaluates the same frame-local keys for Player and MP4. v1/v2 migrate before review; no new native API or dependency was added. Transition and caption expansion remain pending. See [Animation](ANIMATION.md).
+
+## Phase 7 local AI working slice
+
+`core/ai` owns distinct version-1 transcript/scene-plan schemas, deterministic timing/grouping, metadata asset ranking and pure append conversion. The project stays v3 and existing history/persistence/rendering remain authoritative. `features/ai` owns transient wizard drafts and job polling; `platform/ai.ts` validates the minimal `ai.start/status/cancel` preload contract. Browser fallback supports external JSON review/apply.
+
+`electron/ipc/ai.cjs` validates window/main-frame/origin, exact arguments and approved narration IDs. `electron/ai-jobs.cjs` supervises an isolated Node worker; `workers/ollama.cjs` talks only to fixed loopback Ollama, while `workers/transcribe.py` uses a configured local Python/model directory with CPU int8. Native paths never enter renderer-facing AI JSON. Shared process-tree termination is extracted to `electron/child-process.cjs` and reused by existing rendering. AI/export busy checks serialize heavy work, including output selection. No service, database, model downloader or alternate project state store was introduced.
+
+Only reviewed plans enter the document through one guarded append command. Existing manual edits remain unchanged, while visual/caption/narration clips use V1/V4/A1. Real inference is unverified without installed models; see [Local AI](LOCAL_AI.md).

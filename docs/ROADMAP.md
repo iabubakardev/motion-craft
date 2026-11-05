@@ -1,6 +1,6 @@
 # MotionCraft roadmap
 
-Current milestone: Phase 6 animation working slice (keyframes/presets), with transitions and captions pending. Follow ENGINEERING_STANDARDS.md before future work. Production desktop packaging/security and representative media validation are recommended next.
+Current milestone: Phase 7 local AI working slice (worker integrations and reviewed plan-to-timeline flow). Real inference is unverified: Ollama has no local models and faster-whisper is absent. Phase 6 transitions/caption effects remain pending. Follow ENGINEERING_STANDARDS.md before future work. Production desktop packaging/security and representative media validation are recommended next.
 
 - [x] Next.js application created and running (user confirmed)
 - [x] Electron dev window and secure preload IPC verified (automated desktop smoke test)
@@ -16,12 +16,13 @@ Current milestone: Phase 6 animation working slice (keyframes/presets), with tra
 - [ ] Timeline ripple/slip/stretch, cross-scene layer transfer, multi-track group transfer, waveform generation and large-project profiling
 - [x] Shared Remotion composition, synchronized Player preview, local H.264/AAC MP4 worker, secure media resolver, progress/cancel and verified output
 - [x] Workspace stabilization: default linked canvas, mount-safe Player sync, icon controls, fitted/focused canvas and responsive portrait checks
-- [ ] Direct canvas selection/handles, context-menu discovery and representative daily-workflow UX review (see WORKSPACE_REVIEW.md)
+- [ ] Direct canvas selection/handles and representative daily-workflow UX review (see WORKSPACE_REVIEW.md)
 - [ ] Packaged offline rendering runtime, Remotion distribution-license review and broad codec/performance testing
 - [x] Validated animation keyframes, easing, presets, inspector/timeline markers and shared preview/export evaluation
 - [ ] Compatible transitions, expanded typography and dedicated manual/animated captions (see ANIMATION.md)
 - [ ] Local backend/persistence and background jobs as needed
-- [ ] Ollama and faster-whisper pipeline
+- [x] Local AI contracts, supervised workers, discovery, reviewed external plans, metadata asset ranking and append-to-timeline conversion
+- [ ] Real Ollama/faster-whisper inference acceptance with installed models and spoken narration (see LOCAL_AI.md)
 - [ ] Asset semantic search, RAG and controlled agents
 - [ ] Windows packaging, tests, CI/CD and future web investigation
 

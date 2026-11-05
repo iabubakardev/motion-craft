@@ -1,22 +1,11 @@
 // @ts-check
 const path = require("node:path");
 const fs = require("node:fs/promises");
-const { fork, execFile } = require("node:child_process");
+const { fork } = require("node:child_process");
 const { randomUUID } = require("node:crypto");
 const { jobSchema, workerRequestSchema, workerEventSchema } = require("../rendering/contracts.cjs");
 /** @typedef {import('zod').infer<typeof jobSchema>} Job */
-/** @param {import('node:child_process').ChildProcess} child */
-function killTree(child) {
-  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return;
-  if (process.platform === "win32")
-    execFile(
-      path.join(process.env.SystemRoot || "C:\\Windows", "System32", "taskkill.exe"),
-      ["/PID", String(child.pid), "/T", "/F"],
-      { windowsHide: true },
-      () => {},
-    );
-  else child.kill("SIGKILL");
-}
+const { killTree } = require("./child-process.cjs");
 /** @param {(options:import("node:child_process").ForkOptions & {windowsHide:boolean})=>import("node:child_process").ChildProcess} [launch] */
 function createRenderJobs(
   launch = (options) => fork(path.join(__dirname, "../workers/render.cjs"), [], options),

@@ -2,6 +2,8 @@
 import type { commandSchema as motionCommandSchema } from "@/core/animation/commands.cjs";
 import { executeMotionCommand } from "@/core/animation/commands.cjs";
 
+import { applyPlan } from "@/core/ai/planning.cjs";
+import type { Plan } from "@/core/ai/planning.cjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { assertLockedTracksUnchanged } from "@/core/timeline/locks.cjs";
@@ -339,6 +341,14 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
     project,
     executeTimeline,
     executeMotion,
+    applyAIPlan: (plan: Plan, expected: Project) =>
+      !!mutate((project) => {
+        if (project !== expected)
+          throw new Error(
+            "The project changed while planning. Reopen the saved plan JSON and review it against the current project.",
+          );
+        return applyPlan(project, plan, new Date().toISOString());
+      }),
     documentGeneration,
     ready,
     desktop,

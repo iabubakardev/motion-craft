@@ -2,6 +2,11 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("motioncraft", {
   getAppVersion: () => ipcRenderer.invoke("app:getVersion"),
+  ai: {
+    start: (request) => ipcRenderer.invoke("ai:start", request),
+    status: () => ipcRenderer.invoke("ai:status"),
+    cancel: (id) => ipcRenderer.invoke("ai:cancel", id),
+  },
   render: {
     start: (project) => ipcRenderer.invoke("render:start", project),
     status: () => ipcRenderer.invoke("render:status"),

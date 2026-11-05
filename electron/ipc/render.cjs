@@ -8,8 +8,8 @@ const { createRenderJobs } = require("../render-jobs.cjs");
 const { startArgsSchema, workerRequestSchema } = require("../../rendering/contracts.cjs");
 const { idSchema } = require("../../core/project/schema.cjs");
 const { buildComposition } = require("../../rendering/input.cjs");
-/** @param {ReturnType<typeof import('../media-library.cjs').createMediaLibrary>} library */
-function registerRenderIPC(library) {
+/** @param {ReturnType<typeof import('../media-library.cjs').createMediaLibrary>} library @param {()=>boolean} [otherBusy] */
+function registerRenderIPC(library, otherBusy = () => false) {
   const jobs = createRenderJobs();
   let choosing = false;
   /** @type {Set<number>} */
@@ -34,7 +34,8 @@ function registerRenderIPC(library) {
   ipcMain.handle("render:start", async (event, ...args) => {
     const window = check(event),
       [project] = startArgsSchema.parse(args);
-    if (choosing || jobs.isBusy()) throw new Error("Another export is already in progress.");
+    if (choosing || jobs.isBusy() || otherBusy())
+      throw new Error("Another export or AI task is already in progress.");
     if (!project.duration) throw new Error("Add content before exporting.");
     if (project.resolution.width % 2 || project.resolution.height % 2)
       throw new Error("H.264 export requires even project dimensions.");
@@ -115,6 +116,6 @@ function registerRenderIPC(library) {
     return jobs.cancel(event.sender.id, id);
   });
   app.on("before-quit", () => jobs.dispose());
-  return jobs;
+  return { ...jobs, isBusy: () => choosing || jobs.isBusy() };
 }
 module.exports = { registerRenderIPC };

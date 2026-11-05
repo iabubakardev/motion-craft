@@ -37,6 +37,7 @@ export function ClipBlock({
       tabIndex={0}
       aria-label={`Timeline layer ${label}`}
       aria-pressed={selected}
+      aria-haspopup="menu"
       data-clip-id={id}
       title={`${label}${audio ? " · Audio (waveform not generated)" : ""}`}
       onFocus={onFocus}

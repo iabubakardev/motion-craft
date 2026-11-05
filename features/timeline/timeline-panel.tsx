@@ -2,7 +2,8 @@
 import { KeyframeMarkers } from "./keyframe-markers";
 import type { ProjectDocumentController } from "@/features/projects/use-project-document";
 import { EditorIcon } from "@/features/editor/editor-icon";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { TimelineContextMenu } from "./timeline-context-menu";
 import { useShallow } from "zustand/react/shallow";
 import type { DragEvent } from "react";
 import type { MediaAsset } from "@/core/media/types";
@@ -96,6 +97,13 @@ export const TimelinePanel = memo(function TimelinePanel({
     [store, project.fps],
   );
   const gesture = useClipGesture(project, execute, viewport, busy);
+  const [context, setContext] = useState<{
+    x: number;
+    y: number;
+    project: Project;
+    generation: number;
+    target: HTMLElement;
+  } | null>(null);
   const extent = Math.min(
     86400,
     Math.max(
@@ -173,8 +181,11 @@ export const TimelinePanel = memo(function TimelinePanel({
         return;
       }
       const newClipId = crypto.randomUUID();
-      if (run({ type: "SplitClip", clipId: ids[0], newClipId, frame: state.playheadFrame }))
-        state.setSelection([ids[0], newClipId]);
+      if (run({ type: "SplitClip", clipId: ids[0], newClipId, frame: state.playheadFrame })) {
+        state.setSelection([newClipId]);
+        const item = index.clips.get(ids[0]);
+        if (item?.scene && item.layer) onLayer(item.scene.id, newClipId);
+      }
     }
   };
   const dropCommand = (event: DragEvent, trackId: string): TimelineCommand | null => {
@@ -213,6 +224,29 @@ export const TimelinePanel = memo(function TimelinePanel({
       onPointerDownCapture={() => store.getState().setMonitor("timeline")}
       onDragOverCapture={() => store.getState().setMonitor("timeline")}
       onFocusCapture={() => store.getState().setMonitor("timeline")}
+      onContextMenu={(event) => {
+        if (!(event.target instanceof Element) || !event.target.closest(".timeline-track")) return;
+        event.preventDefault();
+        if (busy) return;
+        const clip = event.target.closest<HTMLElement>("[data-clip-id]");
+        const state = store.getState();
+        state.cancelDrag();
+        state.setMonitor("timeline");
+        if (clip?.dataset.clipId) {
+          if (!state.selectedIds.includes(clip.dataset.clipId))
+            state.setSelection([clip.dataset.clipId]);
+          clip.focus({ preventScroll: true });
+        } else state.setSelection([]);
+        const target = clip || event.currentTarget,
+          rect = target.getBoundingClientRect();
+        setContext({
+          x: event.clientX || rect.left + 12,
+          y: event.clientY || rect.top + 12,
+          project,
+          generation: documentGeneration,
+          target,
+        });
+      }}
       onKeyDown={(event) => {
         if (
           busy ||
@@ -258,6 +292,80 @@ export const TimelinePanel = memo(function TimelinePanel({
         }
       }}
     >
+      {context && (
+        <TimelineContextMenu
+          valid={context.project === project && context.generation === documentGeneration && !busy}
+          x={context.x}
+          y={context.y}
+          onClose={(restore) => {
+            setContext(null);
+            if (restore)
+              requestAnimationFrame(() => {
+                const id = store.getState().selectedIds[0];
+                const target = id
+                  ? viewport.current?.querySelector<HTMLElement>(`[data-clip-id="${id}"]`)
+                  : context.target.closest<HTMLElement>("#timeline-panel");
+                if (target?.isConnected) target.focus();
+              });
+          }}
+          items={(() => {
+            const selected = store
+              .getState()
+              .selectedIds.map((id) => index.clips.get(id))
+              .filter((item) => !!item);
+            const locked = selected.some((item) => item.track.locked);
+            const one = selected.length === 1 ? selected[0] : undefined;
+            const frame = store.getState().playheadFrame;
+            const canSplit =
+              one &&
+              !locked &&
+              frame / project.fps > one.clip.start + 1e-6 &&
+              frame / project.fps < one.clip.start + one.clip.duration - 1e-6;
+            return [
+              {
+                label: "Split at playhead",
+                icon: "split",
+                shortcut: "S",
+                disabled: !canSplit,
+                run: () => action("split"),
+              },
+              {
+                label: "Copy",
+                icon: "copy",
+                shortcut: "Ctrl+C",
+                disabled: !selected.length,
+                run: () => action("copy"),
+              },
+              {
+                label: "Duplicate",
+                icon: "duplicate",
+                shortcut: "Ctrl+D",
+                disabled: !selected.length || locked,
+                run: () => action("duplicate"),
+              },
+              {
+                label: "Delete",
+                icon: "delete",
+                shortcut: "Delete",
+                disabled: !selected.length || locked,
+                run: () => action("delete"),
+              },
+              {
+                label: "Paste at playhead",
+                icon: "paste",
+                shortcut: "Ctrl+V",
+                disabled: !clipboardCount,
+                run: () => action("paste"),
+              },
+              {
+                label: "Deselect",
+                disabled: !selected.length,
+                run: () => store.getState().setSelection([]),
+              },
+            ];
+          })()}
+        />
+      )}
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--editor-border)] px-2 py-1 text-[10px]">
         <h2>Timeline</h2>
         <TimelineReadout fps={project.fps} />
@@ -549,7 +657,7 @@ export const TimelinePanel = memo(function TimelinePanel({
               <div
                 className={`timeline-track relative flex-1 ${track.locked ? "opacity-50" : ""}`}
                 onPointerDown={(e) => {
-                  if (e.target === e.currentTarget) {
+                  if (e.button === 0 && e.target === e.currentTarget) {
                     store.getState().setSelection([]);
                     store.getState().selectTrack(track.id);
                   }

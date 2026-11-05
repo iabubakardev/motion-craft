@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "sourceAssetId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "language": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "duration": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 86400
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "const": "faster-whisper"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "device": {
+          "type": "string",
+          "const": "cpu"
+        },
+        "computeType": {
+          "type": "string",
+          "const": "int8"
+        }
+      },
+      "required": ["engine", "name", "device", "computeType"],
+      "additionalProperties": false
+    },
+    "segments": {
+      "minItems": 1,
+      "maxItems": 10000,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 86400
+          },
+          "end": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 86400
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "words": {
+            "maxItems": 3000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "start": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 86400
+                },
+                "end": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 86400
+                },
+                "probability": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": ["text", "start", "end"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["id", "start", "end", "text"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "id",
+    "sourceAssetId",
+    "language",
+    "text",
+    "duration",
+    "model",
+    "segments"
+  ],
+  "additionalProperties": false
+}

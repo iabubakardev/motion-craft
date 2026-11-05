@@ -147,3 +147,9 @@ npm run test:render
 Workspace stabilization adds compact icon controls, a fitted artboard, a focus-canvas mode, automatic timeline fit/follow and a dedicated transport. See [Workspace usability review](docs/WORKSPACE_REVIEW.md) for the research, fixes, verification and remaining UI priorities.
 
 Animation keyframes and presets are available in the inspector and timeline. Projects now save as schema v3; v1/v2 imports migrate with review. See [Animation controls and Phase 6 acceptance](docs/ANIMATION.md), import the [media-free animation sample](public/animation-sample.motioncraft.json), and run `npm run test:animation` for the Player/MP4 regression. Transitions and dedicated caption effects remain incomplete.
+
+## Local AI production (Phase 7 working slice)
+
+Open **AI** in the toolbar to detect local models, transcribe imported narration when a local faster-whisper environment is configured, or plan from a script using an installed local Ollama model. Review descriptions and imported asset matches, then explicitly approve appending real editable visual/caption/narration clips in one undoable edit. Existing scenes and clips remain intact. External AI scene-plan/transcript JSON is distinct from project JSON.
+
+See [local AI setup, contracts, workflow and acceptance](docs/LOCAL_AI.md), [plan JSON Schema](public/ai-scene-plan.schema.json), [transcript JSON Schema](public/ai-transcript.schema.json) and [unmatched example plan](public/ai-plan-sample.json). `npm run test:ai` exercises Electron review/apply/save/export with an external fixture; `npm run test:ai:models` optionally checks actual installed models and explicitly prints skips. No model downloads occur automatically and no npm dependency was added. On the verified machine Ollama is running with zero local models; faster-whisper is absent. Real inference and full Phase 7 acceptance remain pending.

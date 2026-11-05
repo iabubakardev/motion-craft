@@ -1,5 +1,7 @@
 "use client";
 
+import { AIProduction } from "@/features/ai/ai-production";
+import { secondsToFrames } from "@/core/timeline/time.cjs";
 import { EditorIcon } from "./editor-icon";
 import {
   useTimeline,
@@ -60,6 +62,7 @@ function Workspace() {
     setMonitor("source");
     doc.selectMedia(id);
   };
+  const [aiOpen, setAIOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const previewRef = useRef<PreviewMonitorHandle>(null);
   const { clearSelection } = doc;
@@ -74,6 +77,7 @@ function Workspace() {
         ? doc.project.duration > 0
         : !!selected && selected.type !== "image" && selected.status !== "error",
     settingsOpen:
+      aiOpen ||
       state.settingsOpen ||
       exportOpen ||
       doc.importOpen ||
@@ -109,7 +113,19 @@ function Workspace() {
       }
     >
       <EditorToolbar
-        fileActions={<ProjectActions document={doc} />}
+        fileActions={
+          <>
+            <ProjectActions document={doc} />
+            <button
+              className="editor-secondary !px-2"
+              disabled={!doc.ready || doc.busy}
+              onClick={() => setAIOpen(true)}
+              aria-label="AI Production"
+            >
+              AI
+            </button>
+          </>
+        }
         project={projectSettings}
         dirty={doc.dirty}
         filename={doc.filename}
@@ -122,6 +138,26 @@ function Workspace() {
         onSettings={() => dispatch({ type: "settings", open: true })}
         onResetLayout={() => dispatch({ type: "panels", panels: { ...DEFAULT_PANELS } })}
       />
+      {aiOpen && (
+        <AIProduction
+          key={`${doc.project.id}:${doc.documentGeneration}`}
+          project={doc.project}
+          availableAssets={doc.project.assets.filter((asset) =>
+            library.assets.some((item) => item.id === asset.id && item.status !== "error"),
+          )}
+          onClose={() => setAIOpen(false)}
+          onApply={(plan, expected) => {
+            const applied = doc.applyAIPlan(plan, expected);
+            if (applied) {
+              setMonitor("timeline");
+              timeline
+                .getState()
+                .setPlayhead(secondsToFrames(expected.duration, expected.fps, "ceil"));
+            }
+            return applied;
+          }}
+        />
+      )}
       {!!doc.issues.length && (
         <div role="alert" className="project-error-banner">
           <div className="flex justify-between gap-3">
@@ -238,6 +274,7 @@ function Workspace() {
           activeSceneId={doc.activeSceneId}
           documentGeneration={doc.documentGeneration}
           busy={
+            aiOpen ||
             doc.busy ||
             exportOpen ||
             state.settingsOpen ||

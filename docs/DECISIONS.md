@@ -57,3 +57,12 @@ Add dated entries when making or changing significant technical decisions.
 - Use integer local frames, bounded transform values and deterministic named/Bezier easing. Presets generate editable keys, rather than a separate renderer. New shared CJS uses checked JSDoc for Electron compatibility. No dependency was added.
 - Preserve curves through timeline crop/split; regenerate key IDs for duplication/paste. Use the existing snapshot history and reject invalid/locked edits atomically.
 - Ship a tested animation vertical slice. Do not claim transitions, expanded text styling, dedicated caption timing or animated captions complete. Full Phase 6 acceptance remains open; see ANIMATION.md.
+
+## Phase 7 local AI slice decisions (2026-11-05)
+
+- Keep the project schema at v3. Add separate version-1 transcript and scene-plan contracts; AI descriptions are not trusted project JSON. Preserve exact source seconds and optional word alignment in transcript sidecars. Corrected text invalidates its old word alignment.
+- Perform deterministic bounded grouping before Ollama; the model supplies descriptions/keywords, never timing or commands. Use fixed loopback APIs, bounded structured responses, at most one repair retry per batch, and exclude cloud/remote models.
+- Use an optional configured Python environment and complete local CTranslate2 Whisper directories. CPU int8 is the only supported mode in this slice; no implicit downloads or unverified CUDA claim. No npm/Python package was installed. The setup guide targets the faster-whisper 1.2.1 API; actual inference remains a verification gate.
+- Reuse the established supervised child-process approach and extracted process-tree termination. Keep render-specific output transactions intact; coordinate AI/export busy states. Report real stages and measured transcription progress, and cancel owned children on navigation/shutdown.
+- Default application to append, retain existing edits and require review/approval. Use existing clips, track roles, bounded history and persistence. Unmatched visuals stay background; metadata matching is not semantic image recognition.
+- Ship the verified editor/external-plan flow without claiming unavailable inference succeeded. Local model installation and a real spoken-narration end-to-end run are the next acceptance gates.
