@@ -1,6 +1,6 @@
 # Local AI production working slice
 
-Phase 7 is **not fully accepted**. The editor, contracts and optional local integrations are implemented; real inference is still unverified on this machine. Ollama is reachable with zero installed local models. Python 3.11 is installed, but faster-whisper and its model files are absent. No model or Python package was installed or downloaded during this change.
+Phase 7 is **not fully accepted**. Phase 7.1 script planning is verified with real Ollama 0.40.14 and `qwen3:8b`, including the Electron UI/IPC path, editable review, validated JSON and cancellation. Python 3.11 is installed, but faster-whisper and its model files are absent. No model or Python package was installed or downloaded during this change.
 
 ## Workflow
 
@@ -23,9 +23,9 @@ Closing the wizard discards its unsaved draft and cancels its active job. Save p
 
 ## Ollama setup
 
-Start a locally installed Ollama server on `127.0.0.1:11434`. Run `ollama list` to inspect installed models. Install a local text model manually using Ollama's tools after reviewing its size, license and hardware requirements. MotionCraft does not install models or contact cloud providers. Model names identifying cloud/remote models and server-reported remote model/host metadata are rejected. Only the fixed loopback endpoint is used; HTTP redirects are rejected.
+Start a locally installed Ollama server on `127.0.0.1:11434`. Run `ollama list` to inspect installed models. Install a local text model manually using Ollama's tools after reviewing its size, license and hardware requirements. MotionCraft does not install models or contact cloud providers. Model names identifying cloud/remote models and server-reported remote model/host metadata are rejected. The default endpoint is `http://127.0.0.1:11434`. Set `MOTIONCRAFT_OLLAMA_URL` in the trusted Electron launch environment to another HTTP loopback origin (localhost, 127.0.0.1 or ::1; optional port), then restart Electron. Paths, credentials, query strings, non-loopback hosts and redirects are rejected. The renderer cannot configure endpoints.
 
-The adapter uses [`/api/tags`](https://docs.ollama.com/api/tags) for discovery and [`/api/chat`](https://docs.ollama.com/api/chat) with a JSON schema, `stream:false`, bounded context/output and `keep_alive:0`. Models must support structured JSON; unsupported models produce an actionable failure, not a fabricated plan. There are at most two attempts per batch. Inference temperature is configurable. The model supplies visual descriptions/keywords only; it never controls timing, filesystem access or editing commands.
+The adapter uses [`/api/tags`](https://docs.ollama.com/api/tags) for discovery and [`/api/generate`](https://docs.ollama.com/api/generate) with a JSON schema, `stream:false`, `think:false`, a reusable narration-as-data prompt, bounded context/output and `keep_alive:0`. Models must support structured JSON; unsupported models produce an actionable failure, not a fabricated plan. There are at most two attempts per batch. Inference temperature is configurable. The model supplies visual descriptions/keywords only; it never controls timing, filesystem access or editing commands.
 
 Detection reports service reachability and locally advertised model availability. If the service is stopped, the UI asks you to start it; it does not claim that an unreachable service proves Ollama is uninstalled. The selected model's actual speed, memory footprint and output quality need hardware/model-specific testing.
 
@@ -79,12 +79,12 @@ Scenes must be contiguous from zero, with unique IDs and positive durations endi
 
 | Phase 7 item                           | Evidence / status                                                                                  |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Ollama connection and installed models | Real discovery passes; service running, model list empty                                           |
+| Ollama connection and installed models | Real discovery passes; Ollama 0.40.14 lists qwen3:8b                                               |
 | Local narration transcription          | Adapter implemented; real inference unverified (package/model absent)                              |
 | Preserved transcript timestamps        | Strict contracts/core tests and external fixture verified                                          |
 | Captions from transcription            | Conversion verified with timestamped fixture; real transcription-to-caption run pending            |
-| Valid Ollama scene plan                | Structured adapter/repair tests pass; real inference pending                                       |
-| Relevant visual descriptions           | Descriptions are editable and contract-tested; real-model relevance not verified                   |
+| Valid Ollama scene plan                | Structured adapter/repair tests and real qwen3:8b UI generation pass                               |
+| Relevant visual descriptions           | Real nature-script output validated and edited; broader factual/relevance review remains manual    |
 | Ranked imported assets                 | Deterministic metadata ranking tested; no semantic image understanding claimed                     |
 | Review/change proposed assets          | Real wizard asset selection and explicit approval verified                                         |
 | Editable timeline clips                | Real V1/V4/A1 clips and one-step undo/redo verified                                                |
@@ -92,7 +92,7 @@ Scenes must be contiguous from zero, with unique IDs and positive durations endi
 
 Full 10/10 acceptance remains open. CPU inference quality/performance, silent/non-speech audio handling, model-specific structured-output behavior, GPU operation, long-project memory/profiling and production packaging remain unverified. Existing Phase 6 and release/security gates remain open.
 
-Recommended next task: install an explicitly chosen local Ollama model and a complete small Whisper model, run the optional checks with representative spoken narration, then verify transcript correction → planning → captions → export. Only after that evidence should the inference-dependent acceptance items be checked.
+Recommended next task: configure a complete small Whisper model and faster-whisper, run the optional checks with representative spoken narration, then verify transcript correction → planning → captions → export. Only after that evidence should the inference-dependent acceptance items be checked.
 
 ## Troubleshooting
 
@@ -116,3 +116,11 @@ Recommended next task: install an explicitly chosen local Ollama model and a com
 Verification on 2026-11-05: lint, generated-route TypeScript, 85 deterministic tests, production build and native desktop/project/timeline/animation/render/AI suites passed. The real-model command explicitly skipped generation/transcription because models/dependencies are absent. The reviewed external-plan artifact is `.next/ai-smoke-EFuQoG/ai.mp4` (320?180, 30 fps, 2 seconds, H.264/AAC); ignored test profiles/media are not application assets.
 
 Ollama detection follow-up: `/api/version` identifies the running service independently of `/api/tags`. An empty list reports a connected installation with no local models; a model-list error retains the connected version. The verified server version is 0.40.14 with zero models. If the AI bridge is absent in an older Electron window, restart Electron (page reload does not replace preload).
+
+## Phase 7.1 planning sidecar
+
+**Save scene-plan JSON** retains the established reimportable review/apply document. **Save structured planning JSON** exports the separate planning sidecar (schemaVersion 1); this sidecar is for inspection/downstream planning and is not accepted by the existing review-plan importer. It includes planId, sourceText, modelId, fps, timing and scenes. Each scene has sceneId, zero-based order, narration, visualPrompt, searchKeywords, suggestedAssetType, positive estimatedDurationFrames and optional supported animationPreset. Frames are differences between rounded trusted boundaries at project FPS; no LLM frame count or ID is accepted. Original sourceText remains provenance when draft narration is edited; duration estimates stay fixed until regeneration.
+
+Example scene: `{"sceneId":"<application UUID>","order":0,"narration":"A river flows.","visualPrompt":"A forest river in daylight","searchKeywords":["forest","river"],"suggestedAssetType":"video","estimatedDurationFrames":120}`. See [planning JSON Schema](../public/ai-planning.schema.json).
+
+Run `npm run test:ai:planning` against the running dev server for optional real qwen3:8b UI/IPC acceptance. It generates and edits a draft, validates exported JSON, cancels another job and verifies the project stayed unchanged. No media/project files from the user are touched. Real-model checks pass on 2026-11-06; transcription remains explicitly skipped. The unit suite also covers cancellation propagation to fetch, invalid JSON/schema/presets, missing service/model, resource errors, timeouts and duration validation.

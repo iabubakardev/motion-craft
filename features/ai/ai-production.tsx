@@ -5,6 +5,8 @@ import type { Project, ProjectAsset } from "@/core/project/types";
 import { planSchema, transcriptSchema, settingsSchema } from "@/core/ai/schema.cjs";
 import type { runtimeSchema } from "@/core/ai/schema.cjs";
 import { rankAssets, suggestAssets } from "@/core/ai/planning.cjs";
+import { toScenePlan } from "@/core/ai/scene-plan.cjs";
+import { secondsToFrames } from "@/core/timeline/time.cjs";
 import { isAIAvailable } from "@/platform/ai";
 import { AssetSearch } from "@/features/media/asset-search";
 import { StylePackPicker } from "./style-pack-picker";
@@ -591,7 +593,26 @@ export function AIProduction({
                 <h4>
                   Scene {i + 1}: {scene.start.toFixed(2)}–{scene.end.toFixed(2)} s
                 </h4>
-                <p>{scene.narration}</p>
+                <p>
+                  {plan.timing === "estimated" ? "Estimated duration" : "Source duration"}:{" "}
+                  {secondsToFrames(scene.end, plan.fps) - secondsToFrames(scene.start, plan.fps)}{" "}
+                  frames ({(scene.end - scene.start).toFixed(2)} s)
+                </p>
+                {plan.timing === "estimated" ? (
+                  <label className="block">
+                    Narration (duration remains an estimate)
+                    <textarea
+                      aria-label={`Scene narration ${i + 1}`}
+                      className="editor-input w-full"
+                      rows={2}
+                      maxLength={20000}
+                      value={scene.narration}
+                      onChange={(e) => changeScene(scene.id, { narration: e.target.value })}
+                    />
+                  </label>
+                ) : (
+                  <p>{scene.narration}</p>
+                )}
                 <label className="block">
                   Visual description
                   <textarea
@@ -603,7 +624,32 @@ export function AIProduction({
                     onChange={(e) => changeScene(scene.id, { visualDescription: e.target.value })}
                   />
                 </label>
-                <p>{scene.keywords.join(", ")}</p>
+                <label className="block">
+                  Search keywords (comma separated)
+                  <input
+                    aria-label={`Search keywords ${i + 1}`}
+                    className="editor-input w-full"
+                    maxLength={960}
+                    value={scene.keywords.join(",")}
+                    onChange={(e) => changeScene(scene.id, { keywords: e.target.value.split(",") })}
+                  />
+                </label>
+                <label className="block">
+                  Suggested asset type
+                  <select
+                    aria-label={`Suggested asset type ${i + 1}`}
+                    className="editor-input w-full"
+                    value={scene.assetType}
+                    onChange={(e) =>
+                      changeScene(scene.id, {
+                        assetType: e.target.value === "video" ? "video" : "image",
+                      })
+                    }
+                  >
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                  </select>
+                </label>
                 <select
                   aria-label={`Asset for scene ${i + 1}`}
                   className="editor-input w-full"
@@ -649,9 +695,29 @@ export function AIProduction({
             ))}
             <button
               className="editor-secondary"
-              onClick={() => download(plan, "plan.motioncraft-ai.json")}
+              onClick={() => {
+                try {
+                  download(planSchema.parse(plan), "plan.motioncraft-ai.json");
+                } catch {
+                  setMessage(
+                    "Review the plan fields: descriptions and keywords must be nonempty, with at most 12 keywords of 80 characters each.",
+                  );
+                }
+              }}
             >
               Save scene-plan JSON
+            </button>
+            <button
+              className="editor-secondary"
+              onClick={() => {
+                try {
+                  download(toScenePlan(planSchema.parse(plan)), "scene-plan.v1.json");
+                } catch {
+                  setMessage("Correct invalid scene fields before exporting the structured plan.");
+                }
+              }}
+            >
+              Save structured planning JSON
             </button>
             <h3 className="font-semibold">5. Apply to timeline</h3>
             {unavailable && (

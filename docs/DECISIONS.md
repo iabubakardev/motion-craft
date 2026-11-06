@@ -66,3 +66,12 @@ Add dated entries when making or changing significant technical decisions.
 - Reuse the established supervised child-process approach and extracted process-tree termination. Keep render-specific output transactions intact; coordinate AI/export busy states. Report real stages and measured transcription progress, and cancel owned children on navigation/shutdown.
 - Default application to append, retain existing edits and require review/approval. Use existing clips, track roles, bounded history and persistence. Unmatched visuals stay background; metadata matching is not semantic image recognition.
 - Ship the verified editor/external-plan flow without claiming unavailable inference succeeded. Local model installation and a real spoken-narration end-to-end run are the next acceptance gates.
+
+## Phase 7.1 decisions (2026-11-06)
+
+- Reuse existing secure IPC, jobs, review and browser fallback. Generation remains a draft; no automatic timeline edit is introduced.
+- Use /api/generate, JSON Schema, think:false and /no_think for qwen3 structured output. Keep application-owned logical grouping, IDs and timing; only descriptions/keywords/supported media and preset choices come from the model.
+- Allow a trusted launch-environment HTTP loopback origin via MOTIONCRAFT_OLLAMA_URL; renderer requests never contain endpoints. Preserve redirect/cloud-model rejection and bounded payloads.
+- Add a separate version-1 planning sidecar with the requested field names, retaining the existing review/apply JSON format. Trusted frame boundaries use existing FPS conversion; source timestamps remain unchanged.
+- Reuse native forms, Zod, existing state and Node/Electron tests. React Hook Form/TanStack Query provide no demonstrated benefit for this scoped extension; no dependency was added.
+- Real Ollama 0.40.14/qwen3:8b generation and Electron preview/edit/cancel/no-document-change checks pass. This does not establish broad factual quality, long-input performance or transcription acceptance.

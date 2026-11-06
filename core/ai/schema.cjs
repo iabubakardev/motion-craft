@@ -84,6 +84,8 @@ const planSchema = z
     version: z.literal(1),
     id: idSchema,
     name: z.string().trim().min(1).max(120),
+    sourceText: z.string().min(1).max(100000).optional(),
+    modelId: z.string().min(1).max(120).optional(),
     fps: fpsSchema,
     aspectRatio: aspectRatioSchema,
     style: styleSchema,

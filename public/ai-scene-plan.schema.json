@@ -16,6 +16,16 @@
       "minLength": 1,
       "maxLength": 120
     },
+    "sourceText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100000
+    },
+    "modelId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
     "fps": {
       "anyOf": [
         {

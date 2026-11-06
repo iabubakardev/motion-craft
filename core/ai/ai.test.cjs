@@ -65,7 +65,7 @@ function visual(plan) {
   };
 }
 function project(t) {
-  return ops.mergeProjectAssets(ops.createProject(), [
+  return ops.mergeProjectAssets(ops.createProject({ now }), [
     {
       id: t.sourceAssetId,
       filename: "narration.wav",
@@ -257,4 +257,42 @@ test("external plan JSON is strict and cannot contain paths, code, overlapping s
     { ...plan, version: 2 },
   ])
     assert.equal(planSchema.safeParse(invalid).success, false);
+});
+
+test("structured sidecar retains trusted IDs, source and model with normalized frame durations", () => {
+  const { toScenePlan, scenePlanSchema } = require("./scene-plan.cjs");
+  const plan = preparePlan(
+    { kind: "script", text: "A forest grows. Water flows." },
+    settings,
+    randomUUID(),
+  );
+  const result = toScenePlan({
+    ...plan,
+    sourceText: "A forest grows. Water flows.",
+    modelId: "qwen3:8b",
+  });
+  assert.equal(result.modelId, "qwen3:8b");
+  assert.equal(result.planId, plan.id);
+  assert.equal(result.timing, "estimated");
+  assert.equal(result.scenes[0].sceneId, plan.scenes[0].id);
+  assert.equal(result.scenes[0].estimatedDurationFrames, Math.round(plan.duration * plan.fps));
+  for (const frames of [0, -1, 1.5, Infinity])
+    assert.equal(
+      scenePlanSchema.safeParse({
+        ...result,
+        scenes: [{ ...result.scenes[0], estimatedDurationFrames: frames }],
+      }).success,
+      false,
+    );
+  assert.equal(
+    scenePlanSchema.safeParse({ ...result, scenes: [{ ...result.scenes[0], order: 2 }] }).success,
+    false,
+  );
+  assert.equal(
+    scenePlanSchema.safeParse({
+      ...result,
+      scenes: [{ ...result.scenes[0], animationPreset: "run-shell" }],
+    }).success,
+    false,
+  );
 });

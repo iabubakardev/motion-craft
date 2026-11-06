@@ -6,7 +6,9 @@ const { z } = require("zod");
 const { requestSchema, transcriptSchema, eventSchema } = require("../core/ai/schema.cjs");
 const { preparePlan } = require("../core/ai/planning.cjs");
 const { stableId } = require("../core/animation/engine.cjs");
-const { detectOllama, describe } = require("./ollama.cjs");
+const { createOllamaProvider } = require("./ollama.cjs");
+const { toScenePlan } = require("../core/ai/scene-plan.cjs");
+const provider = createOllamaProvider();
 const { contextSchema: assetContextSchema, runAssets } = require("./asset-index.cjs");
 const { killTree } = require("../electron/child-process.cjs");
 /** @type {import('node:child_process').ChildProcess|null} */
@@ -153,7 +155,7 @@ async function run(raw) {
   if (request.kind === "assets") return runAssets(request.operation, assetContext, progress);
   if (request.kind === "detect") {
     const [ollama, whisper] = await Promise.allSettled([
-      detectOllama(),
+      provider.healthCheck(),
       python({ action: "detect" }),
     ]);
     const py =
@@ -179,16 +181,25 @@ async function run(raw) {
       },
     };
   }
-  if (request.kind === "plan")
+  if (request.kind === "plan") {
+    const plan = await provider.generateStructured(
+      preparePlan(request.input, request.settings, id),
+      request.model,
+      request.settings,
+      (stage) => progress(stage),
+    );
+    const result = {
+      ...plan,
+      sourceText:
+        request.input.kind === "script" ? request.input.text : request.input.transcript.text,
+      modelId: request.model,
+    };
+    toScenePlan(result);
     return {
       kind: "plan",
-      plan: await describe(
-        preparePlan(request.input, request.settings, id),
-        request.model,
-        request.settings,
-        (stage) => progress(stage),
-      ),
+      plan: result,
     };
+  }
   if (request.kind === "transcribe") {
     if (!binding || binding.id !== request.assetId)
       throw new Error("Import/relink the narration before transcription.");
@@ -238,6 +249,7 @@ async function run(raw) {
 }
 if (require.main === module) {
   process.once("disconnect", () => {
+    provider.cancel();
     if (ownedPython) killTree(ownedPython);
     process.exit(0);
   });
