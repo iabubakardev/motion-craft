@@ -201,6 +201,15 @@ const clipSchema = z
     id: idSchema,
     assetId: idSchema.optional(),
     layerId: idSchema.optional(),
+    visual: require("../timeline/visual-schema.cjs").visualSchema.optional(),
+    playbackRate: z.number().min(0.25).max(4).optional(),
+    audioOnly: z.boolean().optional(),
+    muted: z.boolean().optional(),
+    volume: z.number().min(0).max(2).optional(),
+    fadeIn: z.number().min(0).max(86400).optional(),
+    fadeOut: z.number().min(0).max(86400).optional(),
+    detachedFrom: idSchema.optional(),
+    detachedAudioId: idSchema.optional(),
     trackId: idSchema,
     start: time,
     duration,
@@ -209,6 +218,11 @@ const clipSchema = z
   })
   .strict()
   .superRefine((clip, ctx) => {
+    if ((clip.layerId || clip.sourceStart === null) && (clip.playbackRate ?? 1) !== 1)
+      ctx.addIssue({
+        code: "custom",
+        message: "Playback speed applies only to independent audio/video clips",
+      });
     if (!!clip.assetId === !!clip.layerId)
       ctx.addIssue({
         code: "custom",
@@ -222,12 +236,13 @@ const clipSchema = z
     if (
       clip.sourceStart !== null &&
       clip.sourceEnd !== null &&
-      Math.abs(clip.sourceEnd - clip.sourceStart - clip.duration) > 0.000001
+      Math.abs(clip.sourceEnd - clip.sourceStart - clip.duration * (clip.playbackRate ?? 1)) >
+        0.000001
     )
       ctx.addIssue({
         code: "custom",
         path: ["sourceEnd"],
-        message: "Source range must equal clip duration (no speed changes)",
+        message: "Source range must equal duration multiplied by playback rate",
       });
   });
 const trackSchema = z
@@ -410,7 +425,7 @@ function validateProjectRelations(project, ctx, version) {
       if ("assetId" in layer) {
         const asset = assets.get(layer.assetId);
         if (!asset) issue([...location, "assetId"], "Missing asset reference");
-        else if (asset.type !== layer.type)
+        else if (asset.type !== layer.type && !(layer.type === "audio" && asset.type === "video"))
           issue([...location, "assetId"], "Asset type does not match layer");
         if (
           asset?.duration &&
@@ -463,7 +478,10 @@ function validateProjectRelations(project, ctx, version) {
         const asset = assets.get(clip.assetId);
         if (!asset) issue([...location, "assetId"], "Missing asset reference");
         else {
-          if (track.type !== (asset.type === "audio" ? "audio" : "video"))
+          if (
+            track.type !== (asset.type === "audio" || clip.audioOnly ? "audio" : "video") ||
+            (clip.audioOnly && asset.type !== "video")
+          )
             issue(location, "Asset requires a compatible track");
           if (
             version === 2 &&
@@ -495,7 +513,10 @@ const legacyClipSchema = z
   .superRefine((clip, ctx) => {
     if (!!clip.assetId === !!clip.layerId)
       ctx.addIssue({ code: "custom", message: "Clip requires exactly one reference" });
-    if (Math.abs(clip.sourceEnd - clip.sourceStart - clip.duration) > 0.000001)
+    if (
+      Math.abs(clip.sourceEnd - clip.sourceStart - clip.duration * (clip.playbackRate ?? 1)) >
+      0.000001
+    )
       ctx.addIssue({ code: "custom", path: ["sourceEnd"], message: "Invalid v1 source range" });
   });
 const legacyTrackSchema = trackSchema

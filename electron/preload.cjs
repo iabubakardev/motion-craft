@@ -3,6 +3,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("motioncraft", {
   getAppVersion: () => ipcRenderer.invoke("app:getVersion"),
   ai: {
+    inspectAudio: (assetId) => ipcRenderer.invoke("ai:inspect-audio", assetId),
+    saveTranscript: (document) => ipcRenderer.invoke("ai:save-transcript", document),
+    copyTranscript: (text) => ipcRenderer.invoke("ai:copy-transcript", text),
     transcriptionSettings: () => ipcRenderer.invoke("ai:transcription-settings"),
     configureTranscription: (preferences, choosePaths) =>
       ipcRenderer.invoke("ai:configure-transcription", preferences, choosePaths),

@@ -137,9 +137,35 @@ const preferencesSchema = configSchema.pick({ model: true, device: true, compute
 const settingsSchema = z
   .object({ config: configSchema.nullable(), available: z.boolean(), message: z.string().max(500) })
   .strict();
+const sourceRangeSchema = z
+  .object({
+    clipId: z.uuid().optional(),
+    sourceStart: seconds,
+    sourceEnd: seconds,
+    timelineStart: seconds,
+    rate: z.number().min(0.25).max(4),
+  })
+  .strict()
+  .refine((r) => r.sourceEnd > r.sourceStart, "Invalid source range");
+const audioInfoSchema = z
+  .object({
+    hasAudio: z.boolean(),
+    duration: seconds,
+    size: z.number().nonnegative(),
+    modifiedAt: z.number().finite(),
+  })
+  .strict();
+const exportFileSchema = z
+  .object({
+    format: z.enum(["txt", "srt", "vtt", "json", "csv"]),
+    text: z.string().max(5 * 1024 * 1024),
+  })
+  .strict();
 const transcriptSchema = z
   .object({
     version: z.literal(1),
+    context: sourceRangeSchema.optional(),
+    status: z.literal("completed").optional(),
     id: z.uuid(),
     assetId: z.uuid(),
     source: z
@@ -185,6 +211,9 @@ const transcriptSchema = z
       });
   });
 module.exports = {
+  sourceRangeSchema,
+  audioInfoSchema,
+  exportFileSchema,
   wordSchema,
   segmentSchema,
   modelSchema,

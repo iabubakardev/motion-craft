@@ -1,6 +1,5 @@
 "use client";
 import { CaptionTemplates } from "./caption-templates";
-import { createTimelineIndex } from "@/core/timeline/commands.cjs";
 import { useMemo, useState } from "react";
 import type { ProjectDocumentController } from "@/features/projects/use-project-document";
 import { captionRecords } from "@/core/captions/commands.cjs";
@@ -65,7 +64,6 @@ function saveText(text: string, format: "srt" | "vtt") {
 export function CaptionInspector({
   document: doc,
   onGenerateCaptions,
-  sourceAssetId,
 }: {
   document: ProjectDocumentController;
   onGenerateCaptions: (assetId?: string, clipId?: string) => void;
@@ -75,8 +73,7 @@ export function CaptionInspector({
   const selected = useTimeline((s) => s.selectedIds),
     store = useTimelineStoreApi();
   const records = useMemo(() => captionRecords(doc.project), [doc.project]);
-  const index = useMemo(() => createTimelineIndex(doc.project), [doc.project]);
-  const audio = selected.map((id) => index.clips.get(id)).find((r) => r?.asset?.type === "audio");
+
   const ids = selected.filter((id) => records.some((r) => r.layer.id === id));
   const focused =
     records.find((r) => ids.includes(r.layer.id)) ||
@@ -124,7 +121,7 @@ export function CaptionInspector({
         <button
           className="editor-primary w-full"
           disabled={!doc.ready || doc.busy}
-          onClick={() => onGenerateCaptions(audio?.asset?.id || sourceAssetId, audio?.clip.id)}
+          onClick={() => onGenerateCaptions()}
         >
           Generate captions
         </button>

@@ -1,4 +1,6 @@
 "use client";
+import { VisualCanvas } from "./visual-canvas";
+import type { VisualPreview } from "./visual-canvas";
 import type { Caption } from "@/core/captions/presets.cjs";
 import { CaptionCanvas } from "@/features/captions/caption-canvas";
 import type { ProjectDocumentController } from "@/features/projects/use-project-document";
@@ -25,6 +27,7 @@ export function CompositionMonitor({
   controlsRef: Ref<PreviewMonitorHandle>;
   document: ProjectDocumentController;
 }) {
+  const [visualPreview, setVisualPreview] = useState<VisualPreview | null>(null);
   const [captionPreview, setCaptionPreview] = useState<{ id: string; box: Caption["box"] } | null>(
     null,
   );
@@ -79,7 +82,7 @@ export function CompositionMonitor({
           <Player
             ref={connect}
             component={ProjectComposition}
-            inputProps={{ input, captionPreview }}
+            inputProps={{ input, captionPreview, visualPreview }}
             durationInFrames={model.durationInFrames}
             compositionWidth={model.width}
             compositionHeight={model.height}
@@ -92,6 +95,11 @@ export function CompositionMonitor({
                 Source/Timeline to retry.
               </p>
             )}
+          />
+          <VisualCanvas
+            document={doc}
+            onPreview={setVisualPreview}
+            onBegin={() => player.current?.pause()}
           />
           <CaptionCanvas
             project={project}

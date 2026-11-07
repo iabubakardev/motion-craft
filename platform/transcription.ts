@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 import { settingsSchema, preferencesSchema } from "@/core/transcription/schema.cjs";
 export async function transcriptionSettings() {
   const bridge = typeof window !== "undefined" ? window.motioncraft?.ai : undefined;
@@ -21,4 +21,33 @@ export async function configureTranscription(
   return settingsSchema.parse(
     await bridge.configureTranscription(preferencesSchema.parse(preferences), choosePaths),
   );
+}
+
+export async function inspectAudio(assetId: string) {
+  const bridge = typeof window !== "undefined" ? window.motioncraft?.ai : undefined;
+  if (!bridge?.inspectAudio) throw new Error("Restart Electron to load audio inspection.");
+  const { audioInfoSchema } = await import("@/core/transcription/schema.cjs");
+  return audioInfoSchema.parse(await bridge.inspectAudio(assetId));
+}
+
+export async function copyTranscript(text: string) {
+  const bridge = typeof window !== "undefined" ? window.motioncraft?.ai : undefined;
+  if (bridge?.copyTranscript) {
+    const result = z
+      .object({ copied: z.literal(true) })
+      .strict()
+      .parse(await bridge.copyTranscript(text));
+    return result;
+  }
+  await navigator.clipboard.writeText(text);
+  return { copied: true };
+}
+export async function saveTranscriptExport(
+  format: "txt" | "srt" | "vtt" | "json" | "csv",
+  text: string,
+) {
+  const bridge = typeof window !== "undefined" ? window.motioncraft?.ai : undefined;
+  if (!bridge?.saveTranscript)
+    throw new Error("Open the current Electron desktop app to save transcript exports.");
+  return bridge.saveTranscript({ format, text });
 }

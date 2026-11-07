@@ -34,3 +34,6 @@ Schema v3 and local JSON persistence are implemented, with strict v1/v2 validati
 
 - [x] Phase 7.4 caption styles/inspector, word timing/regrouping, SRT/VTT exchange and atomic preview positioning on the existing timeline (see CAPTIONS.md for acceptance and limits).
 - [ ] Packaged font/runtime support, physical high-DPI caption gesture validation and measured long-form caption playback profiling.
+
+- [x] Phase 7.5 reference-based audio detachment, selected-range transcription, reviewed transcript reuse, grouping and TXT/SRT/VTT/JSON/CSV exports, verified with a real speech video and synchronized MP4 output (see AUDIO_TRANSCRIPTS.md).
+- [ ] Waveform generation, long-form multilingual/codec/performance acceptance and packaged offline AI/runtime distribution.

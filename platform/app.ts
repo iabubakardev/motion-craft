@@ -2,7 +2,11 @@ import type { AIJob, AIRequest } from "./ai";
 import type { RenderJob } from "@/platform/render";
 import type { MediaAsset, MediaImportResult, MediaMetadata } from "@/core/media/types";
 import type { z } from "zod";
-import type { settingsSchema, preferencesSchema } from "@/core/transcription/schema.cjs";
+import type {
+  settingsSchema,
+  preferencesSchema,
+  audioInfoSchema,
+} from "@/core/transcription/schema.cjs";
 import type { Project, ProjectAsset } from "@/core/project/types";
 import type {
   openResultSchema,
@@ -13,6 +17,12 @@ import type {
 export interface DesktopBridge {
   getAppVersion: () => Promise<string>;
   ai: {
+    copyTranscript: (text: string) => Promise<{ copied: boolean }>;
+    inspectAudio: (assetId: string) => Promise<z.infer<typeof audioInfoSchema>>;
+    saveTranscript: (document: {
+      format: "txt" | "srt" | "vtt" | "json" | "csv";
+      text: string;
+    }) => Promise<{ saved: boolean }>;
     transcriptionSettings: () => Promise<z.infer<typeof settingsSchema>>;
     configureTranscription: (
       preferences: z.infer<typeof preferencesSchema>,

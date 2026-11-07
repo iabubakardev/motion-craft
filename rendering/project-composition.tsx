@@ -1,3 +1,6 @@
+import type { z } from "zod";
+import type { visualSchema } from "../core/timeline/visual-schema.cjs";
+type VisualPreview = { id: string; visual: z.infer<typeof visualSchema> };
 import type { Caption } from "../core/captions/presets.cjs";
 import { captionForLayer } from "../core/captions/presets.cjs";
 import { CaptionContent } from "./caption-content";
@@ -24,7 +27,9 @@ import type { RenderInput, CompositionClip } from "./types";
 export function ProjectComposition({
   input,
   captionPreview,
+  visualPreview,
 }: {
+  visualPreview?: VisualPreview | null;
   input: RenderInput;
   captionPreview?: { id: string; box: Caption["box"] } | null;
 }) {
@@ -59,7 +64,10 @@ export function ProjectComposition({
           durationInFrames={clip.durationInFrames}
           premountFor={fps}
         >
-          <ClipContent clip={clip} captionPreview={captionPreview} />
+          <ClipContent
+            clip={visualPreview?.id === clip.id ? { ...clip, visual: visualPreview.visual } : clip}
+            captionPreview={captionPreview}
+          />
         </Sequence>
       ))}
     </AbsoluteFill>
@@ -90,7 +98,44 @@ function ClipContent({
           },
         }
       : original;
-  const transform = pose(clip.motion?.keyframes ?? [], basePose(layer), frame);
+  const transform = pose(clip.motion?.keyframes ?? [], basePose(layer, clip.visual), frame);
+  const transition = clip.visual;
+  const span = Math.min(clip.durationInFrames / 2, (transition?.transitionSeconds ?? 0) * fps);
+  const entering = span ? Math.max(0, 1 - frame / span) : 0;
+  const leaving = span ? Math.max(0, 1 - (clip.durationInFrames - 1 - frame) / span) : 0;
+  const progress = transition?.entrance !== "none" ? entering : 0;
+  const out = transition?.exit !== "none" ? leaving : 0;
+  if (transition) {
+    if (transition.entrance === "fade" || transition.exit === "fade")
+      transform.opacity *=
+        1 -
+        Math.max(
+          transition.entrance === "fade" ? progress : 0,
+          transition.exit === "fade" ? out : 0,
+        );
+    transform.x +=
+      (transition.entrance === "slide-left"
+        ? width * progress
+        : transition.entrance === "slide-right"
+          ? -width * progress
+          : 0) +
+      (transition.exit === "slide-left"
+        ? -width * out
+        : transition.exit === "slide-right"
+          ? width * out
+          : 0);
+    if (transition.entrance === "zoom" || transition.exit === "zoom") {
+      const factor =
+        1 -
+        0.2 *
+          Math.max(
+            transition.entrance === "zoom" ? progress : 0,
+            transition.exit === "zoom" ? out : 0,
+          );
+      transform.scaleX *= factor;
+      transform.scaleY *= factor;
+    }
+  }
   const style: CSSProperties = {
     position: "absolute",
     width: "100%",
@@ -145,7 +190,19 @@ function ClipContent({
       <Html5Audio
         src={clip.src}
         trimBefore={clip.sourceStart}
-        volume={clip.muted ? 0 : clip.volume}
+        playbackRate={clip.playbackRate}
+        volume={(localFrame) =>
+          clip.muted
+            ? 0
+            : clip.volume *
+              Math.min(
+                1,
+                clip.fadeIn ? localFrame / (fps * clip.fadeIn) : 1,
+                clip.fadeOut
+                  ? Math.max(0, (clip.durationInFrames - 1 - localFrame) / (fps * clip.fadeOut))
+                  : 1,
+              )
+        }
         onError={onMediaError}
       />
     ) : null;
@@ -171,6 +228,7 @@ function ClipContent({
       <OffthreadVideo
         src={clip.src}
         trimBefore={clip.sourceStart}
+        playbackRate={clip.playbackRate}
         volume={clip.volume}
         muted={clip.muted}
         crossOrigin="anonymous"
@@ -178,7 +236,9 @@ function ClipContent({
         style={{
           width: "100%",
           height: "100%",
-          objectFit: layer?.type === "video" ? layer.properties.fit || "contain" : "contain",
+          objectFit:
+            clip.visual?.fit ??
+            (layer?.type === "video" ? layer.properties.fit || "contain" : "contain"),
         }}
       />
     );
@@ -190,7 +250,8 @@ function ClipContent({
         style={{
           width: "100%",
           height: "100%",
-          objectFit: layer?.type === "image" ? layer.properties.fit : "contain",
+          objectFit:
+            clip.visual?.fit ?? (layer?.type === "image" ? layer.properties.fit : "contain"),
         }}
       />
     );
@@ -227,7 +288,21 @@ function ClipContent({
     );
   return (
     <div style={style} data-composition-clip={clip.id}>
-      {content}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          transform: `scale(${clip.visual?.flipX ? -1 : 1},${clip.visual?.flipY ? -1 : 1})`,
+          clipPath: clip.visual
+            ? `inset(${clip.visual.crop.top * 100}% ${clip.visual.crop.right * 100}% ${clip.visual.crop.bottom * 100}% ${clip.visual.crop.left * 100}%)`
+            : undefined,
+        }}
+      >
+        {content}
+      </div>
     </div>
   );
 }

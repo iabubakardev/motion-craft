@@ -116,3 +116,5 @@ Schema v4 caption-layer properties optionally contain strict `caption` version 1
 ## Visual backgrounds and caption display
 
 Video-layer properties optionally accept fit (contain/cover, default contain). Project-background replacement creates ordinary source-bound image/video scene layers on the lowest Background visual track; it has no special file access. Caption style.displayMode is optional (full/phrase/word); legacy payloads without it retain full-caption behavior. Compact timeline visibility is transient and does not alter stored tracks; AddTrack follows existing frame-command history and the 64-track bound. See CAPTIONS.md.
+
+Phase 7.5 adds optional clip audio-only/mute/volume/fade/detachment metadata and optional transcript context/status without changing schema-v4 requirements for existing projects. Audio-only clips may reference video assets on audio tracks. See [Audio and transcripts](AUDIO_TRANSCRIPTS.md) for exact fields and time bases.

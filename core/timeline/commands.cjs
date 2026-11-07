@@ -34,6 +34,28 @@ const clipboardItemSchema = z
   .strict();
 const commandSchema = z.discriminatedUnion("type", [
   z
+    .object({
+      type: z.literal("DetachAudio"),
+      clipId: idSchema,
+      audioClipId: idSchema,
+      trackId: idSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("UpdateAudio"),
+      clipId: idSchema,
+      patch: z
+        .object({
+          volume: z.number().min(0).max(2).optional(),
+          muted: z.boolean().optional(),
+          fadeIn: z.number().min(0).max(86400).optional(),
+          fadeOut: z.number().min(0).max(86400).optional(),
+        })
+        .strict(),
+    })
+    .strict(),
+  z
     .object({ type: z.literal("AddTrack"), trackId: idSchema, kind: z.enum(["video", "audio"]) })
     .strict(),
   z
@@ -131,7 +153,7 @@ function requireClip(index, id) {
 }
 /** @param {import('./types').ClipRecord} item */
 function clipType(item) {
-  return item.layer?.type || item.asset?.type;
+  return item.clip.audioOnly ? "audio" : item.layer?.type || item.asset?.type;
 }
 /** @param {number} a @param {number} durationA @param {number} b @param {number} durationB */
 function overlaps(a, durationA, b, durationB) {
@@ -182,7 +204,7 @@ function validatePlan(project, plan, index) {
       (asset) =>
         asset.id === (clip.assetId || (layer && "assetId" in layer ? layer.assetId : undefined)),
     );
-    const type = layer?.type || asset?.type;
+    const type = clip.audioOnly ? "audio" : layer?.type || asset?.type;
     if (!type || !track || track.type !== (type === "audio" ? "audio" : "video"))
       throw new Error("Choose a compatible video or audio track.");
     if (track.locked) throw new Error("The target track is locked.");
@@ -300,8 +322,14 @@ function planTimelineEdit(project, input, index = createTimelineIndex(project)) 
         ...old,
         start,
         duration: end - start,
-        sourceStart: old.sourceStart === null ? null : old.sourceStart + start - old.start,
-        sourceEnd: old.sourceEnd === null ? null : old.sourceEnd + end - old.start - old.duration,
+        sourceStart:
+          old.sourceStart === null
+            ? null
+            : old.sourceStart + (start - old.start) * (old.playbackRate ?? 1),
+        sourceEnd:
+          old.sourceEnd === null
+            ? null
+            : old.sourceEnd + (end - old.start - old.duration) * (old.playbackRate ?? 1),
       };
       plan = { removed: [old.id], changes: [change(item, clip)] };
       break;
@@ -317,7 +345,10 @@ function planTimelineEdit(project, input, index = createTimelineIndex(project)) 
             ...old,
             start: framesToSeconds(command.startFrame, project.fps),
             duration,
-            sourceEnd: old.sourceStart === null ? null : old.sourceStart + duration,
+            sourceEnd:
+              old.sourceStart === null
+                ? null
+                : old.sourceStart + duration * (old.playbackRate ?? 1),
           }),
         ],
       };
@@ -337,7 +368,10 @@ function planTimelineEdit(project, input, index = createTimelineIndex(project)) 
       const left = change(item, {
         ...old,
         duration: at - old.start,
-        sourceEnd: old.sourceStart === null ? null : old.sourceStart + at - old.start,
+        sourceEnd:
+          old.sourceStart === null
+            ? null
+            : old.sourceStart + (at - old.start) * (old.playbackRate ?? 1),
       });
       const right = change(item, {
         ...old,
@@ -345,7 +379,10 @@ function planTimelineEdit(project, input, index = createTimelineIndex(project)) 
         ...(old.layerId ? { layerId: command.newClipId } : {}),
         start: at,
         duration: old.start + old.duration - at,
-        sourceStart: old.sourceStart === null ? null : old.sourceStart + at - old.start,
+        sourceStart:
+          old.sourceStart === null
+            ? null
+            : old.sourceStart + (at - old.start) * (old.playbackRate ?? 1),
       });
       if (right.layer) right.layer = { ...right.layer, id: command.newClipId };
       if (
@@ -424,6 +461,8 @@ function planTimelineEdit(project, input, index = createTimelineIndex(project)) 
       });
       break;
     }
+    case "DetachAudio":
+    case "UpdateAudio":
     case "AddTrack":
     case "UpdateTrack":
       return plan;
@@ -456,6 +495,8 @@ function executeTimelineCommand(project, input, timestamp) {
   const command = commandSchema.parse(input);
   const parsed = projectSchema.parse(project);
   z.iso.datetime().parse(timestamp);
+  if (command.type === "DetachAudio" || command.type === "UpdateAudio")
+    return require("./audio.cjs").executeAudioCommand(parsed, command, timestamp);
   if (command.type === "AddTrack") {
     if (parsed.tracks.length >= 64) throw new Error("The project has reached its 64-track limit.");
     if (parsed.tracks.some((t) => t.id === command.trackId))

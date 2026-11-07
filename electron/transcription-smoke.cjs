@@ -249,10 +249,16 @@ if (!python || !worker || !audio) {
         await wait(`document.querySelectorAll('[data-clip-id]').length>0`);
         assert.deepEqual(await exported(), project);
         await click("Transcribe");
+        await wait(`!!document.querySelector('[aria-label="Transcription source"]')`);
+        await evaluate(
+          `(()=>{const e=document.querySelector('[aria-label="Transcription source"]');e.value=${JSON.stringify(project.transcripts[0].assetId)};e.dispatchEvent(new Event('change',{bubbles:true}));})()`,
+        );
         await wait(
           `document.querySelector('[aria-label="Transcription"]').textContent.includes('Review saved transcript')`,
         );
         await click("Start transcription");
+        await wait(`!!document.querySelector('[aria-label="Transcript review"]')`);
+        await click("Re-transcribe");
         await click("Cancel transcription");
         await wait(`window.motioncraft.ai.status().then(j=>j?.state==='cancelled')`);
         await click("Close transcription");

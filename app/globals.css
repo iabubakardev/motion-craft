@@ -26,6 +26,7 @@ body {
 }
 
 .editor-workspace {
+  position: relative;
   --editor-bg: #11151c;
   --editor-panel: #1b222c;
   --editor-elevated: #29313d;
@@ -67,7 +68,7 @@ body {
 }
 .editor-body {
   display: grid;
-  grid-template-rows: minmax(240px, 1fr) 6px var(--timeline-height);
+  grid-template-rows: minmax(140px, 1fr) 6px var(--timeline-height);
   flex: 1;
   min-height: 0;
 }
@@ -78,6 +79,7 @@ body {
   overflow: hidden;
 }
 .editor-panel {
+  position: relative;
   background: var(--editor-panel);
   min-width: 0;
 }
@@ -502,4 +504,25 @@ body {
   .canvas-monitor {
     min-height: 350px;
   }
+}
+
+.editor-tool-categories {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--editor-border);
+  background: var(--editor-panel);
+}
+.editor-tool-categories button {
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--editor-muted);
+}
+.editor-tool-categories button:hover {
+  color: var(--editor-accent);
+  background: var(--editor-elevated);
 }

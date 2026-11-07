@@ -34,8 +34,17 @@ const commandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ConvertPreset"), clipId: z.uuid() }).strict(),
   z.object({ type: z.literal("ClearAnimation"), clipId: z.uuid() }).strict(),
 ]);
-/** @param {import('../project/types').Layer|undefined} layer */
-function basePose(layer) {
+/** @param {import('../project/types').Layer|undefined} layer @param {import('zod').infer<typeof import('../timeline/visual-schema.cjs').visualSchema>|undefined} [visual] */
+function basePose(layer, visual) {
+  if (visual)
+    return {
+      x: visual.x,
+      y: visual.y,
+      scaleX: visual.scaleX,
+      scaleY: visual.scaleY,
+      rotation: visual.rotation,
+      opacity: visual.opacity,
+    };
   return {
     x: layer?.position.x ?? 0,
     y: layer?.position.y ?? 0,
@@ -97,7 +106,7 @@ function executeMotionCommand(project, input, timestamp) {
         command.name,
         command.durationFrames,
         total,
-        basePose(layer),
+        basePose(layer, clip.visual),
         parsed.resolution.width,
         parsed.resolution.height,
         clip.id,

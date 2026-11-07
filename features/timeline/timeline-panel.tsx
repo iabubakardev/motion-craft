@@ -37,6 +37,7 @@ interface Props {
   onAsset: (id: string) => void;
   onGenerateCaptions: (assetId: string, clipId: string) => void;
   onSetBackground: (assetId: string) => void;
+  onDetachAudio: (clipId: string) => Promise<boolean>;
 }
 const HEADER = 196;
 export const TimelinePanel = memo(function TimelinePanel({
@@ -52,6 +53,7 @@ export const TimelinePanel = memo(function TimelinePanel({
   onAsset,
   onGenerateCaptions,
   onSetBackground,
+  onDetachAudio,
 }: Props) {
   const store = useTimelineStoreApi(),
     viewport = useRef<HTMLDivElement>(null);
@@ -345,18 +347,36 @@ export const TimelinePanel = memo(function TimelinePanel({
               frame / project.fps < one.clip.start + one.clip.duration - 1e-6;
             const targetId = context.target.dataset.clipId;
             const target = targetId ? index.clips.get(targetId) : undefined;
-            const trackId = context.target.closest<HTMLElement>("[data-track-id]")?.dataset.trackId;
-            const audio =
-              target?.asset?.type === "audio"
-                ? target
-                : !targetId
-                  ? project.tracks
-                      .find((t) => t.id === trackId && t.type === "audio")
-                      ?.clips.map((c) => index.clips.get(c.id))
-                      .find((r) => r?.asset?.type === "audio")
-                  : undefined;
+            const audio = target?.asset && target.asset.type !== "image" ? target : undefined;
             return [
-              ...(target?.asset && target.asset.type !== "audio"
+              ...(target?.asset?.type === "video" && !target.clip.audioOnly
+                ? [
+                    {
+                      label: "Transcribe Video Audio",
+                      run: () => {
+                        if (target.asset) onGenerateCaptions(target.asset.id, target.clip.id);
+                      },
+                    },
+                    {
+                      label: "Detach Audio",
+                      disabled: locked,
+                      run: () => {
+                        void onDetachAudio(target.clip.id);
+                      },
+                    },
+                  ]
+                : []),
+              ...(audio?.asset
+                ? [
+                    {
+                      label: "Export Transcript",
+                      run: () => {
+                        if (audio.asset) onGenerateCaptions(audio.asset.id, audio.clip.id);
+                      },
+                    },
+                  ]
+                : []),
+              ...(target?.asset && target.asset.type !== "audio" && !target.clip.audioOnly
                 ? [
                     {
                       label: "Set as background",
@@ -450,6 +470,27 @@ export const TimelinePanel = memo(function TimelinePanel({
             <span className="sr-only">{name}</span>
           </button>
         ))}
+        <button
+          className="editor-secondary !px-2 !py-1"
+          aria-label="Detach selected video audio"
+          disabled={
+            busy ||
+            selectedCount !== 1 ||
+            ![...index.clips.values()].some(
+              (r) =>
+                store.getState().selectedIds.includes(r.clip.id) &&
+                r.asset?.type === "video" &&
+                !r.clip.audioOnly &&
+                !r.track.locked,
+            )
+          }
+          onClick={() => {
+            const id = store.getState().selectedIds[0];
+            if (id) void onDetachAudio(id);
+          }}
+        >
+          Detach Audio
+        </button>
         <button
           className="editor-secondary !px-2 !py-1"
           aria-label="Box select clips"

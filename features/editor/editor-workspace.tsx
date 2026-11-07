@@ -1,5 +1,8 @@
 "use client";
 
+import { resolveTranscriptionSources } from "@/core/transcription/source";
+import type { TranscriptionSource } from "@/core/transcription/source";
+import { TranscriptionSourceChoice } from "@/features/ai/transcription-source-choice";
 import { AIProduction } from "@/features/ai/ai-production";
 import { TranscriptionPanel } from "@/features/ai/transcription-panel";
 import { secondsToFrames } from "@/core/timeline/time.cjs";
@@ -52,6 +55,8 @@ function Workspace() {
     resetPanel,
   } = useEditorState();
   const timeline = useTimelineStoreApi();
+  const selectionKey = useTimeline((s) => s.selectedIds.join(":"));
+  const [inspectorTool, setInspectorTool] = useState<{ key: string; section: string } | null>(null);
   const monitor = useTimeline((s) => s.monitor);
   const setMonitor = timeline.getState().setMonitor;
   const [canvasFocus, setCanvasFocus] = useState(false);
@@ -71,8 +76,23 @@ function Workspace() {
   const applyBackground = (assetId: string) => {
     if (doc.setBackground(assetId)) setMonitor("timeline");
   };
+  const [sourceChoices, setSourceChoices] = useState<TranscriptionSource[]>([]);
   const openCaptions = (assetId?: string, clipId?: string) => {
-    setCaptionSource(assetId ? { assetId, clipId } : null);
+    if (assetId) {
+      setCaptionSource({ assetId, clipId });
+      setTranscriptionOpen(true);
+      return;
+    }
+    const sources = resolveTranscriptionSources(
+      doc.project,
+      timeline.getState().selectedIds,
+      library.selectedId,
+    );
+    if (sources.length > 1) {
+      setSourceChoices(sources);
+      return;
+    }
+    setCaptionSource(sources[0] || null);
     setTranscriptionOpen(true);
   };
   const [exportOpen, setExportOpen] = useState(false);
@@ -179,6 +199,17 @@ function Workspace() {
           }}
         />
       )}
+      {!!sourceChoices.length && (
+        <TranscriptionSourceChoice
+          sources={sourceChoices}
+          onClose={() => setSourceChoices([])}
+          onChoose={(source) => {
+            setSourceChoices([]);
+            setCaptionSource(source);
+            setTranscriptionOpen(true);
+          }}
+        />
+      )}
       {transcriptionOpen && (
         <TranscriptionPanel
           key={`${doc.project.id}:${doc.documentGeneration}`}
@@ -186,6 +217,26 @@ function Workspace() {
           assets={library.assets}
           initialAssetId={captionSource?.assetId}
           sourceClipId={captionSource?.clipId}
+          onGrouped={(transcript, expected, groups, offset, replace) => {
+            const applied = doc.generateGrouped(
+              transcript,
+              expected,
+              groups,
+              offset,
+              captionSource?.clipId,
+              replace,
+            );
+            if (applied) {
+              setMonitor("timeline");
+              const clip = expected.tracks
+                .flatMap((t) => t.clips)
+                .find((c) => c.id === captionSource?.clipId);
+              timeline
+                .getState()
+                .setPlayhead(clip ? secondsToFrames(clip.start, expected.fps) : offset);
+            }
+            return applied;
+          }}
           onImport={library.importMedia}
           importing={library.importing}
           onClose={() => setTranscriptionOpen(false)}
@@ -227,6 +278,38 @@ function Workspace() {
           </ul>
         </div>
       )}
+      <nav aria-label="Editing tools" className="editor-tool-categories">
+        <button onClick={() => dispatch({ type: "tab", tab: "media" })}>Media</button>
+        <button onClick={() => dispatch({ type: "tab", tab: "audio" })}>Audio</button>
+        <button
+          disabled={doc.busy}
+          onClick={() => {
+            const title = doc.addTitle();
+            if (title) {
+              timeline.getState().setSelection([title.id]);
+              timeline.getState().setPlayhead(secondsToFrames(title.start, doc.project.fps));
+            }
+            setMonitor("timeline");
+          }}
+        >
+          Add text
+        </button>
+        <button onClick={() => setInspectorTool({ key: selectionKey, section: "Captions" })}>
+          Captions
+        </button>
+        <button onClick={() => setInspectorTool({ key: selectionKey, section: "Animation" })}>
+          Animation
+        </button>
+        <button onClick={() => setInspectorTool({ key: selectionKey, section: "Basic" })}>
+          Transform / Crop
+        </button>
+        <button onClick={() => setInspectorTool({ key: selectionKey, section: "Transitions" })}>
+          Transitions
+        </button>
+        <span className="ml-auto text-[10px] text-[var(--editor-muted)]">
+          Select a clip to edit it
+        </span>
+      </nav>
       <div ref={bodyRef} className="editor-body">
         <div className="editor-top">
           <MediaSidebar
@@ -309,6 +392,10 @@ function Workspace() {
             onReset={() => resetPanel("right")}
           />
           <PropertiesInspector
+            requestedSection={
+              inspectorTool?.key === selectionKey ? inspectorTool.section : undefined
+            }
+            onSection={() => setInspectorTool(null)}
             asset={selected}
             project={projectSettings}
             document={doc}
@@ -349,6 +436,7 @@ function Workspace() {
           onAsset={doc.selectMedia}
           onGenerateCaptions={openCaptions}
           onSetBackground={applyBackground}
+          onDetachAudio={doc.detachAudio}
         />
       </div>
       <footer className="editor-statusbar">

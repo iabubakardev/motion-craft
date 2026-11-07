@@ -173,32 +173,64 @@ async function run(raw) {
         throw new Error("Source changed. Relink it before transcription.");
     };
     await verify();
-    const result = require("../core/transcription/schema.cjs").resultSchema.parse(
-      await require("./transcription.cjs").transcribe(
-        transcriptionConfig,
-        {
-          protocolVersion: 1,
-          jobId: id,
-          action: "transcribe",
-          audioPath: binding.originalPath,
-          model: request.model,
-          device: request.device,
-          computeType: request.computeType,
-          options: { beamSize: 1, wordTimestamps: true, vadFilter: true, language: null },
-        },
-        (stage) => progress(stage),
+    let rangeFile;
+    if (request.range) {
+      progress("Decoding selected audio range");
+      rangeFile = await require("./audio-range.cjs").prepareAudioRange(
+        binding.originalPath,
+        request.range.sourceStart,
+        request.range.sourceEnd,
         (child) => {
           ownedPython = child;
         },
-      ),
-    );
+      );
+    }
+    let result;
+    try {
+      result = require("../core/transcription/schema.cjs").resultSchema.parse(
+        await require("./transcription.cjs").transcribe(
+          transcriptionConfig,
+          {
+            protocolVersion: 1,
+            jobId: id,
+            action: "transcribe",
+            audioPath: rangeFile?.filename || binding.originalPath,
+            model: request.model,
+            device: request.device,
+            computeType: request.computeType,
+            options: { beamSize: 1, wordTimestamps: true, vadFilter: true, language: null },
+          },
+          (stage) => progress(stage),
+          (child) => {
+            ownedPython = child;
+          },
+        ),
+      );
+    } finally {
+      rangeFile?.cleanup();
+    }
     await verify();
+    if (request.range) {
+      const offset = request.range.sourceStart;
+      result = {
+        ...result,
+        duration: request.range.sourceEnd,
+        segments: result.segments.map((s) => ({
+          ...s,
+          start: s.start + offset,
+          end: s.end + offset,
+          words: s.words.map((w) => ({ ...w, start: w.start + offset, end: w.end + offset })),
+        })),
+      };
+    }
     const { audioPath, ...safeResult } = result;
     void audioPath;
     return {
       kind: "transcription",
       transcript: {
         version: 1,
+        status: "completed",
+        ...(request.range ? { context: request.range } : {}),
         id,
         assetId: request.assetId,
         source: {

@@ -107,3 +107,5 @@ Development builds automatically detect `tools/motion-craft-ai/.venv/Scripts/pyt
 The panel displays the selected interpreter and worker in read-only fields. When configured, Change Python and worker is optional; native pickers open at the current paths. No selection dialogs are required before starting with detected defaults.
 
 The primary transcription flow starts with Choose audio file (native media import and automatic source selection) or an existing Audio source. Runtime paths, model/device/compute choices and configuration actions are under collapsed Advanced settings. Defaults remain automatic; missing setup and job failures remain visible beside Start transcription.
+
+Phase 7.5 extends this workflow with selected clip source resolution, interval-only inference, reviewed project-local reuse, grouping and multi-format native export. See [Audio and transcripts](AUDIO_TRANSCRIPTS.md) for current behavior and verification; this supersedes the earlier picker-first description when a clip or library asset is selected.

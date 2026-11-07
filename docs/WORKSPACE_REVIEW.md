@@ -54,3 +54,5 @@ These are recorded follow-ups, not newly implemented tools. No new feature miles
 - `app/globals.css`: fitted canvas, transport, focus mode and responsive layout.
 - `core/timeline/timeline.test.cjs`, `electron/{media-smoke,timeline-smoke,render-smoke}.cjs`: view-state and interaction regressions.
 - README, architecture/workspace/rendering/timeline/roadmap/audit documentation and this review.
+
+Workspace overflow correction: positioned editor/panel containers keep absolutely positioned visually hidden file inputs inside the inspector's scroll boundary. `electron electron/layout-smoke.cjs` verifies no outer document scroll or gap below the footer at 1920x1000, 1280x720, 1100x640 and 150% zoom. Panel scrolling remains available. Lint, strict types and 139 tests pass.

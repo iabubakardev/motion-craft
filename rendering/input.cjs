@@ -36,14 +36,17 @@ function buildComposition(value) {
           const layer = layers.get(clip.layerId || ""),
             assetId = clip.assetId || (layer && "assetId" in layer ? layer.assetId : undefined);
           const asset = assetId ? assets.get(assetId) : undefined,
-            type = layer?.type || asset?.type;
+            type = clip.audioOnly ? "audio" : layer?.type || asset?.type;
           const from = Math.max(0, secondsToFrames(clip.start, project.fps, "ceil")),
             end = Math.max(0, secondsToFrames(clip.start + clip.duration, project.fps, "ceil"));
           if (end <= from) return [];
           const sourceStart =
             clip.sourceStart === null
               ? 0
-              : secondsToFrames(clip.sourceStart + from / project.fps - clip.start, project.fps);
+              : secondsToFrames(
+                  clip.sourceStart + (from / project.fps - clip.start) * (clip.playbackRate ?? 1),
+                  project.fps,
+                );
           return [
             {
               id: clip.id,
@@ -59,13 +62,21 @@ function buildComposition(value) {
                       layer.properties.caption?.words || [],
                     )
                   : [],
+              visual: clip.visual,
+              playbackRate: clip.playbackRate ?? 1,
               motion: project.animations[clip.id],
               assetId,
               src: assetId ? input.sources[assetId] || null : null,
               label: asset?.filename || type || "Clip",
+              fadeIn: clip.fadeIn || 0,
+              fadeOut: clip.fadeOut || 0,
               muted:
-                track.muted || !!(layer && "muted" in layer.properties && layer.properties.muted),
-              volume: layer && "volume" in layer.properties ? layer.properties.volume : 1,
+                !!clip.muted ||
+                track.muted ||
+                !!(layer && "muted" in layer.properties && layer.properties.muted),
+              volume:
+                clip.volume ??
+                (layer && "volume" in layer.properties ? layer.properties.volume : 1),
             },
           ];
         });

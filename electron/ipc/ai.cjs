@@ -80,6 +80,86 @@ function registerAIIPC(library, otherBusy = () => false) {
       throw new Error("Configure the external Python worker in Transcription settings first.");
     return jobSchema.parse(jobs.start(event.sender.id, request, binding, assetContext, config));
   });
+  ipcMain.handle("ai:inspect-audio", async (event, ...args) => {
+    check(event);
+    const [id] = z.tuple([z.uuid()]).parse(args);
+    const asset = library
+      .listAssets()
+      .find((a) => a.id === id && a.type !== "image" && a.status !== "error");
+    if (!asset) throw new Error("Import or relink the selected media first.");
+    const binding = library.captureBindings([asset])[0];
+    if (!binding) throw new Error("Media is offline. Relink it first.");
+    const fs = require("node:fs/promises");
+    const canonical = await fs.realpath(binding.originalPath);
+    const before = await fs.stat(binding.originalPath);
+    if (!before.isFile()) throw new Error("Media is not a regular file.");
+    if (
+      canonical !== binding.originalPath ||
+      before.ino !== binding.ino ||
+      before.size !== binding.size ||
+      before.mtimeMs !== binding.modifiedAt
+    )
+      throw new Error("Media changed. Relink it first.");
+    const probe = z
+      .object({
+        streams: z.array(z.object({ codec_type: z.string() })),
+        format: z.object({ duration: z.coerce.number().finite().nonnegative() }),
+      })
+      .parse(await require("../render-binaries.cjs").probe(binding.originalPath));
+    check(event);
+    const after = await fs.stat(binding.originalPath);
+    if (
+      (await fs.realpath(binding.originalPath)) !== canonical ||
+      after.ino !== before.ino ||
+      after.size !== before.size ||
+      after.mtimeMs !== before.mtimeMs
+    )
+      throw new Error("Media changed during inspection.");
+    return require("../../core/transcription/schema.cjs").audioInfoSchema.parse({
+      hasAudio: probe.streams.some((s) => s.codec_type === "audio"),
+      duration: probe.format.duration,
+      size: after.size,
+      modifiedAt: after.mtimeMs,
+    });
+  });
+  ipcMain.handle("ai:copy-transcript", (event, ...args) => {
+    check(event);
+    const [text] = z.tuple([z.string().max(5 * 1024 * 1024)]).parse(args);
+    if (Buffer.byteLength(text, "utf8") > 5 * 1024 * 1024)
+      throw new Error("Transcript copy exceeds 5 MB.");
+    require("electron").clipboard.writeText(text);
+    return { copied: true };
+  });
+  ipcMain.handle("ai:save-transcript", async (event, ...args) => {
+    const owner = check(event),
+      url = event.sender.getURL(),
+      [document] = z
+        .tuple([require("../../core/transcription/schema.cjs").exportFileSchema])
+        .parse(args);
+    if (Buffer.byteLength(document.text, "utf8") > 5 * 1024 * 1024)
+      throw new Error("Transcript export exceeds 5 MB.");
+    const selected = await dialog.showSaveDialog(owner, {
+      title: "Export transcript",
+      defaultPath: `transcript.${document.format}`,
+      filters: [{ name: document.format.toUpperCase(), extensions: [document.format] }],
+      properties: ["showOverwriteConfirmation", "dontAddToRecent"],
+    });
+    check(event);
+    if (event.sender.getURL() !== url || owner.isDestroyed())
+      throw new Error("Window changed during export.");
+    if (selected.canceled || !selected.filePath) return { saved: false };
+    const fs = require("node:fs/promises"),
+      temporary = selected.filePath + `.${require("node:crypto").randomUUID()}.tmp`;
+    try {
+      await fs.writeFile(temporary, document.text, { encoding: "utf8", flag: "wx" });
+      check(event);
+      if (event.sender.getURL() !== url) throw new Error("Window changed during export.");
+      await fs.rename(temporary, selected.filePath);
+    } finally {
+      await fs.unlink(temporary).catch(() => {});
+    }
+    return { saved: true };
+  });
   ipcMain.handle("ai:transcription-settings", (event, ...args) => {
     check(event);
     z.tuple([]).parse(args);

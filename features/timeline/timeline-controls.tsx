@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element -- Approved media protocol URLs bypass the Next image optimizer. */
 "use client";
 import { EditorIcon } from "@/features/editor/editor-icon";
 import { useState } from "react";
@@ -61,16 +60,20 @@ export function ClipBlock({
         className="absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize bg-white/10"
         onPointerDown={(e) => onTrim(e, "left")}
       />
-      {thumbnail && (
-        <img
-          src={thumbnail}
-          alt=""
-          loading="lazy"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
+      {thumbnail && !audio && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-70"
+          style={{
+            backgroundImage: `url(${JSON.stringify(thumbnail)})`,
+            backgroundSize: "auto 100%",
+            backgroundRepeat: "repeat-x",
+            backgroundPosition: "left center",
+          }}
         />
       )}
       {children}
-      <span className="pointer-events-none relative truncate px-3">
+      <span className="pointer-events-none relative self-start truncate bg-black/55 px-3 py-1 text-white">
         {audio ? "A " : "V "}
         {label}
       </span>

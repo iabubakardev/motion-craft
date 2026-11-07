@@ -14,7 +14,7 @@
     "format:check": "prettier --check",
     "check": "npm run lint && npm run typecheck && npm test",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --test features/timeline/selection.test.cjs core/captions/captions.test.cjs core/transcription/transcription.test.cjs workers/transcription.test.cjs electron/transcription-settings.test.cjs core/ai/ai.test.cjs electron/ai-jobs.test.cjs electron/ipc/ai.test.cjs workers/ai.test.cjs core/animation/animation.test.cjs core/project/project.test.cjs electron/security.test.cjs electron/media-library.test.cjs electron/project-store.test.cjs electron/ipc/media.test.cjs electron/ipc/projects.test.cjs features/media/library.test.cjs features/editor/editor-state.test.cjs core/timeline/timeline.test.cjs rendering/composition.test.cjs electron/render-security.test.cjs electron/render-jobs.test.cjs",
+    "test": "node --test core/timeline/visual.test.cjs core/transcription/grouping.test.cjs features/timeline/selection.test.cjs core/captions/captions.test.cjs core/transcription/transcription.test.cjs workers/transcription.test.cjs electron/transcription-settings.test.cjs core/ai/ai.test.cjs electron/ai-jobs.test.cjs electron/ipc/ai.test.cjs workers/ai.test.cjs core/animation/animation.test.cjs core/project/project.test.cjs electron/security.test.cjs electron/media-library.test.cjs electron/project-store.test.cjs electron/ipc/media.test.cjs electron/ipc/projects.test.cjs features/media/library.test.cjs features/editor/editor-state.test.cjs core/timeline/timeline.test.cjs rendering/composition.test.cjs electron/render-security.test.cjs electron/render-jobs.test.cjs",
     "test:ai:models": "node workers/check-ai.cjs",
     "test:ai:planning": "electron electron/ai-planning-smoke.cjs",
     "test:ai": "electron electron/ai-smoke.cjs",
@@ -27,7 +27,10 @@
     "render:setup": "node workers/prepare-renderer.cjs",
     "test:transcription": "electron electron/transcription-smoke.cjs",
     "test:captions": "electron electron/captions-smoke.cjs",
-    "test:background": "electron electron/background-smoke.cjs"
+    "test:background": "electron electron/background-smoke.cjs",
+    "test:audio-transcripts": "electron electron/audio-transcript-smoke.cjs",
+    "test:visual": "electron electron/visual-smoke.cjs",
+    "test:layout": "electron electron/layout-smoke.cjs"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.540",

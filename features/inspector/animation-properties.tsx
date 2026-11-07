@@ -67,7 +67,7 @@ export function AnimationProperties({ document: doc }: { document: ProjectDocume
                     id: crypto.randomUUID(),
                     property,
                     frame: local,
-                    value: pose(keys, basePose(layer), local)[property],
+                    value: pose(keys, basePose(layer, clip.visual), local)[property],
                     easing: { type: "linear" },
                   },
                 },

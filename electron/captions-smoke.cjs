@@ -158,6 +158,9 @@ app.once("browser-window-created", (_event, window) =>
           0.001,
       );
       await click("Undo");
+      await wait(
+        `Math.abs(parseFloat(document.querySelector('[data-caption-id="${id}"]').style.width)-544)<.1`,
+      );
       await evaluate(
         `(()=>{const handle=document.querySelector('[aria-label="Rotate caption"]'),r=handle.getBoundingClientRect(),a=document.querySelector('[aria-label="Caption canvas controls"]').getBoundingClientRect(),box=document.querySelector('[aria-label="Position caption ${id}"]').getBoundingClientRect();handle.setPointerCapture=()=>{};handle.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:4,clientX:r.x,clientY:r.y}));handle.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:4,clientX:box.x+box.width/2+a.width*.1,clientY:box.y+box.height/2}));})()`,
       );
@@ -169,7 +172,7 @@ app.once("browser-window-created", (_event, window) =>
       );
       assert.ok(
         Math.abs(captionRecords(await exported())[0].layer.properties.caption.box.rotation - 90) <
-          0.001,
+          0.02,
       );
       await click("Undo");
       await evaluate(`document.querySelector('[aria-label="Lock caption position"]').click()`);

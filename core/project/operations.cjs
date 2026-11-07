@@ -45,6 +45,7 @@ function rebuildProject(project, timestamp = new Date().toISOString()) {
     start += scene.duration;
     return updated;
   });
+  const oldClips = new Map(project.tracks.flatMap((t) => t.clips.map((c) => [c.id, c])));
   const tracks = project.tracks.map((track) => ({
     ...track,
     clips: track.clips.filter((clip) => !clip.layerId),
@@ -55,6 +56,7 @@ function rebuildProject(project, timestamp = new Date().toISOString()) {
       if (!track) throw new Error("Layer track is missing.");
       const sourceStart = "sourceStart" in layer.properties ? layer.properties.sourceStart : null;
       track.clips.push({
+        ...oldClips.get(layer.id),
         id: layer.id,
         layerId: layer.id,
         trackId: track.id,
@@ -219,20 +221,32 @@ function addLayer(project, sceneId, type, assetId) {
   });
 }
 
-/** @param {import('./types').Project} project @param {string} sceneId @param {string} layerId @param {Partial<Pick<import('./types').Layer, 'start'|'duration'|'position'|'scale'|'rotation'|'opacity'|'zIndex'>> & {text?: string}} patch */
+/** @param {import('./types').Project} project @param {string} sceneId @param {string} layerId @param {Partial<Pick<import('./types').Layer, 'start'|'duration'|'position'|'scale'|'rotation'|'opacity'|'zIndex'>> & {text?: string,fontSize?:number,fontFamily?:string,color?:string}} patch */
 function updateLayer(project, sceneId, layerId, patch) {
   const scene = requireScene(project, sceneId);
   const layer = scene.layers.find((item) => item.id === layerId);
   if (!layer) throw new Error("Layer no longer exists.");
-  const { text, ...common } = patch;
+  const { text, fontSize, fontFamily, color, ...common } = patch;
+  if (
+    (fontSize !== undefined || fontFamily !== undefined || color !== undefined) &&
+    layer.type !== "text"
+  )
+    throw new Error("Typography changes require a text layer.");
   const updated = {
     ...layer,
     ...common,
-    ...(text !== undefined && (layer.type === "text" || layer.type === "caption")
+    ...((text !== undefined ||
+      fontSize !== undefined ||
+      fontFamily !== undefined ||
+      color !== undefined) &&
+    (layer.type === "text" || layer.type === "caption")
       ? {
           properties: {
             ...layer.properties,
-            text,
+            ...(text !== undefined ? { text } : {}),
+            ...(fontSize !== undefined ? { fontSize } : {}),
+            ...(fontFamily !== undefined ? { fontFamily } : {}),
+            ...(color !== undefined ? { color } : {}),
             ...(layer.type === "caption" &&
             layer.properties.caption &&
             text !== layer.properties.text

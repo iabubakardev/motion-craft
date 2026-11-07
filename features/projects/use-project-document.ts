@@ -1,4 +1,5 @@
 "use client";
+import { executeVisualCommand } from "@/core/timeline/visual.cjs";
 import type { commandSchema as motionCommandSchema } from "@/core/animation/commands.cjs";
 import { executeMotionCommand } from "@/core/animation/commands.cjs";
 
@@ -7,6 +8,7 @@ import type { Plan } from "@/core/ai/planning.cjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { assertLockedTracksUnchanged } from "@/core/timeline/locks.cjs";
+import { createTimelineIndex } from "@/core/timeline/commands.cjs";
 import { executeTimelineCommand } from "@/core/timeline/commands.cjs";
 import type { TimelineCommand } from "@/core/timeline/types";
 import type { useMediaLibrary } from "@/features/media/use-media-library";
@@ -14,6 +16,9 @@ import type { Layer, Project, ProjectHistory, ValidationIssue } from "@/core/pro
 import * as operations from "@/core/project/operations.cjs";
 import { createHistory, commitProject, undoProject, redoProject } from "@/core/project/history.cjs";
 import { fpsSchema, serializeProject } from "@/core/project/schema.cjs";
+import { generateGroupedCaptions } from "@/core/transcription/grouped-captions.cjs";
+import type { Group } from "@/core/transcription/grouping";
+import { inspectAudio } from "@/platform/transcription";
 import { setProjectBackground } from "@/core/project/background.cjs";
 import { executeCaptionCommand } from "@/core/captions/commands.cjs";
 import type { commandSchema as captionCommandSchema } from "@/core/captions/commands.cjs";
@@ -355,6 +360,25 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
           );
         return saveTranscript(project, transcript);
       }),
+    generateGrouped: (
+      transcript: unknown,
+      expected: Project,
+      groups: Group[],
+      offset: number,
+      clipId?: string,
+      replace = false,
+    ) =>
+      !!mutate((project) => {
+        if (project.id !== expected.id || project.fps !== expected.fps)
+          throw new Error("Project changed. Reopen transcription.");
+        if (clipId) {
+          const clip = (p: Project) =>
+            p.tracks.flatMap((t) => t.clips).find((c) => c.id === clipId);
+          if (JSON.stringify(clip(project)) !== JSON.stringify(clip(expected)))
+            throw new Error("Source clip changed. Reopen transcription.");
+        }
+        return generateGroupedCaptions(project, transcript, groups, clipId, offset, replace);
+      }),
     generateCaptions: (
       transcript: unknown,
       expected: Project,
@@ -375,6 +399,64 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
         }
         return generateCaptions(project, transcript, offsetFrames);
       }),
+    addTitle: () => {
+      const before = new Set(
+        current.current.present.scenes.flatMap((s) => s.layers.map((l) => l.id)),
+      );
+      const next = mutate((project) => {
+        const base = project.scenes.length ? project : operations.addScene(project);
+        return operations.addLayer(
+          base,
+          activeSceneId ?? base.scenes[base.scenes.length - 1].id,
+          "text",
+          undefined,
+        );
+      });
+      if (next) {
+        const scene = next.scenes.find((s) => s.layers.some((l) => !before.has(l.id)));
+        const layer = scene?.layers.find((l) => !before.has(l.id));
+        if (scene && layer) {
+          selectLayer(scene.id, layer.id);
+          return { id: layer.id, start: scene.start + layer.start };
+        }
+      }
+      return null;
+    },
+    executeVisual: (command: unknown, expected?: Project) =>
+      !!mutate((project) => {
+        if (expected && expected !== project)
+          throw new Error("The project changed during this edit. Try again.");
+        return executeVisualCommand(project, command);
+      }),
+    detachAudio: async (clipId: string) => {
+      const expected = current.current.present,
+        item = createTimelineIndex(expected).clips.get(clipId);
+      try {
+        if (!item?.asset) throw new Error("Select an online video clip.");
+        const info = await inspectAudio(item.asset.id);
+        if (!info.hasAudio) throw new Error("This video has no audio stream to detach.");
+        const latest = current.current.present;
+        if (
+          latest.id !== expected.id ||
+          latest.fps !== expected.fps ||
+          JSON.stringify(createTimelineIndex(latest).clips.get(clipId)?.clip) !==
+            JSON.stringify(item.clip)
+        )
+          throw new Error("The selected video changed during inspection. Try Detach Audio again.");
+        return executeTimeline(
+          {
+            type: "DetachAudio",
+            clipId,
+            audioClipId: crypto.randomUUID(),
+            trackId: crypto.randomUUID(),
+          },
+          latest,
+        );
+      } catch (error) {
+        reportError(error);
+        return false;
+      }
+    },
     setBackground: (assetId: string) =>
       !!mutate((project) => setProjectBackground(project, assetId)),
     executeCaption: (command: z.infer<typeof captionCommandSchema>, expected?: Project) =>

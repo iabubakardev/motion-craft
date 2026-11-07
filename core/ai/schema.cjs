@@ -153,6 +153,7 @@ const requestSchema = z.discriminatedUnion("kind", [
     .object({
       kind: z.literal("transcription"),
       assetId: idSchema,
+      range: require("../transcription/schema.cjs").sourceRangeSchema.optional(),
       model: require("../transcription/schema.cjs").modelSchema,
       device: require("../transcription/schema.cjs").deviceSchema,
       computeType: require("../transcription/schema.cjs").computeSchema,

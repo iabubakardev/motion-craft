@@ -137,3 +137,28 @@ test("transcription settings IPC validates trusted senders and exact operation t
     }),
   );
 });
+
+test("audio inspection and transcript save reject paths, extra arguments and untrusted senders", async () => {
+  const c = setup(),
+    inspect = c.handlers.get("ai:inspect-audio"),
+    save = c.handlers.get("ai:save-transcript");
+  await assert.rejects(inspect(c.event, "C:/private.mp4"));
+  await assert.rejects(inspect(c.event, "00000000-0000-4000-8000-000000000001", "extra"));
+  await assert.rejects(save(c.event, { format: "txt", text: "safe", path: "C:/private" }));
+  await assert.rejects(save(c.event, { format: "exe", text: "unsafe" }));
+  await assert.rejects(save(c.event, { format: "txt", text: "safe" }, "extra"));
+  c.frame.url = "https://untrusted.example/";
+  await assert.rejects(inspect(c.event, "00000000-0000-4000-8000-000000000001"));
+  await assert.rejects(save(c.event, { format: "txt", text: "safe" }));
+  assert.equal(c.starts, 0);
+});
+
+test("transcript copy is a bounded trusted write-only capability", () => {
+  const c = setup(),
+    copy = c.handlers.get("ai:copy-transcript");
+  assert.throws(() => copy(c.event, { text: "no" }));
+  assert.throws(() => copy(c.event, "safe", "extra"));
+  assert.throws(() => copy(c.event, "a".repeat(5 * 1024 * 1024 + 1)));
+  c.frame.url = "https://untrusted.example/";
+  assert.throws(() => copy(c.event, "safe"));
+});
