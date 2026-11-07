@@ -20,6 +20,8 @@ export interface TimelineState {
   viewportWidth: number;
   viewportHeight: number;
   snapEnabled: boolean;
+  captionGuides: boolean;
+  setCaptionGuides: (visible: boolean) => void;
   dragAssetId: string | null;
   drag: DragPreview | null;
   clipboard: ClipboardItem[];

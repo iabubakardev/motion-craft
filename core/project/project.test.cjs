@@ -173,3 +173,92 @@ test("undo/redo snapshots, clean checkpoint and replacement history", () => {
   assert.equal(history.past.length, 0);
   assert.equal(history.future.length, 0);
 });
+
+test("project backgrounds fill behind captions, replace atomically, remain undoable and round-trip", () => {
+  const { setProjectBackground } = require("./background.cjs"),
+    { appendCues } = require("../captions/commands.cjs");
+  const p = appendCues(
+    ops.createProject(),
+    [{ start: 0, end: 10, text: "Caption on top" }],
+    randomUUID(),
+  );
+  const image = {
+    id: randomUUID(),
+    filename: "background.png",
+    type: "image",
+    mimeType: "image/png",
+    size: 1,
+    importedAt: p.createdAt,
+  };
+  const video = {
+    id: randomUUID(),
+    filename: "background.mp4",
+    type: "video",
+    mimeType: "video/mp4",
+    size: 1,
+    importedAt: p.createdAt,
+    duration: 2.5,
+  };
+  p.assets.push(image, video);
+  const original = structuredClone(p),
+    next = setProjectBackground(p, image.id);
+  const background = next.tracks.find((t) => t.name === "Background"),
+    layer = next.scenes[0].layers.find((l) => l.trackId === background.id);
+  assert.equal(background.order, next.tracks.length - 1);
+  assert.equal(layer.properties.fit, "cover");
+  assert.equal(layer.duration, 10);
+  assert.deepEqual(
+    next.scenes[0].layers.filter((l) => l.type === "caption"),
+    p.scenes[0].layers,
+  );
+  const h = commitProject(createHistory(p), next);
+  assert.deepEqual(undoProject(h).present, p);
+  assert.deepEqual(redoProject(undoProject(h)).present, next);
+  assert.deepEqual(parseProjectJSON(serializeProject(next)).project, next);
+  assert.deepEqual(p, original);
+  const replaced = setProjectBackground(next, video.id),
+    v = replaced.scenes[0].layers.find((l) => l.trackId === background.id);
+  assert.equal(v.type, "video");
+  assert.equal(v.duration, 2.5);
+  assert.equal(v.properties.muted, true);
+  assert.equal(v.properties.fit, "cover");
+  assert.equal(replaced.duration, 10);
+  const locked = {
+    ...next,
+    tracks: next.tracks.map((t) => (t.id === background.id ? { ...t, locked: true } : t)),
+  };
+  assert.throws(() => setProjectBackground(locked, video.id), /Unlock/);
+  const empty = ops.createProject();
+  empty.assets.push(image);
+  assert.equal(setProjectBackground(empty, image.id).duration, 5);
+});
+
+test("adding visual/audio tracks is bounded, undoable and keeps backgrounds behind new content", () => {
+  const { executeTimelineCommand } = require("../timeline/commands.cjs"),
+    { setProjectBackground } = require("./background.cjs");
+  const p = ops.createProject(),
+    image = {
+      id: randomUUID(),
+      filename: "image.png",
+      type: "image",
+      mimeType: "image/png",
+      size: 1,
+      importedAt: p.createdAt,
+    };
+  p.assets.push(image);
+  const base = setProjectBackground(p, image.id),
+    id = randomUUID(),
+    now = new Date(Date.now() + 1000).toISOString();
+  const next = executeTimelineCommand(base, { type: "AddTrack", trackId: id, kind: "video" }, now);
+  assert.equal(next.tracks.length, base.tracks.length + 1);
+  assert.equal(next.tracks.find((t) => t.name === "Background").order, next.tracks.length - 1);
+  assert.ok(
+    next.tracks.find((t) => t.id === id).order <
+      next.tracks.find((t) => t.name === "Background").order,
+  );
+  assert.deepEqual(undoProject(commitProject(createHistory(base), next)).present, base);
+  assert.throws(
+    () => executeTimelineCommand(next, { type: "AddTrack", trackId: id, kind: "audio" }, now),
+    /exists/,
+  );
+});

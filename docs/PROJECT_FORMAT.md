@@ -108,3 +108,11 @@ Seconds remain the serialized unit in v2. Video/audio source endpoints are numer
 ## Schema v4 transcription persistence
 
 V4 adds required `transcripts: []`. Strict v3 validates animation/scene/clip invariants before migration, preserves all existing data and IDs, and initializes the array empty. V1/v2 follow their existing validated migrations first; all migrated documents require review and an explicit v4 save. Each transcript is a separate version-1 record with asset association, safe source fingerprint, original segments, reviewed result/model/execution metadata and caption clip references. Paths and media bytes are excluded. Caption references must resolve to existing caption clips and are pruned on rebuild after deletion. Reviewed text and caption clip text remain independently editable; see [Transcription](TRANSCRIPTION.md).
+
+## Caption visual extension
+
+Schema v4 caption-layer properties optionally contain strict `caption` version 1: preset ID, resolved style, normalized center X/Y/width, rotation/position lock and ordered clip-local words with optional emphasis overrides. Existing documents without this extension remain valid. Older builds reject new styled-caption fields; do not use them to rewrite new projects. Transcript originals remain separate and unchanged. Caption word ends must fit layer duration. Scene-layer bounds are now 10,000 (project JSON remains limited to 5 MB). See [Caption editor](CAPTIONS.md) for timing/edit behavior and format limitations.
+
+## Visual backgrounds and caption display
+
+Video-layer properties optionally accept fit (contain/cover, default contain). Project-background replacement creates ordinary source-bound image/video scene layers on the lowest Background visual track; it has no special file access. Caption style.displayMode is optional (full/phrase/word); legacy payloads without it retain full-caption behavior. Compact timeline visibility is transient and does not alter stored tracks; AddTrack follows existing frame-command history and the 64-track bound. See CAPTIONS.md.

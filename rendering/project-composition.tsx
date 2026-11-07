@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+import type { Caption } from "../core/captions/presets.cjs";
+import { captionForLayer } from "../core/captions/presets.cjs";
+import { CaptionContent } from "./caption-content";
+import { useMemo, useState, useEffect } from "react";
 import {
   AbsoluteFill,
   Sequence,
@@ -9,6 +12,8 @@ import {
   useCurrentFrame,
   getRemotionEnvironment,
   cancelRender,
+  delayRender,
+  continueRender,
 } from "remotion";
 import type { CSSProperties } from "react";
 import { pose } from "../core/animation/engine.cjs";
@@ -16,8 +21,20 @@ import { basePose } from "../core/animation/commands.cjs";
 import { buildComposition } from "./input.cjs";
 import type { RenderInput, CompositionClip } from "./types";
 
-export function ProjectComposition({ input }: { input: RenderInput }) {
+export function ProjectComposition({
+  input,
+  captionPreview,
+}: {
+  input: RenderInput;
+  captionPreview?: { id: string; box: Caption["box"] } | null;
+}) {
   const model = useMemo(() => buildComposition(input), [input]);
+  const [fontHandle] = useState(() => delayRender("Waiting for caption fonts"));
+  useEffect(() => {
+    void document.fonts.ready
+      .then(() => continueRender(fontHandle))
+      .catch(() => cancelRender(new Error("Caption fonts could not load")));
+  }, [fontHandle]);
   const { fps } = useVideoConfig();
   return (
     <AbsoluteFill
@@ -42,21 +59,37 @@ export function ProjectComposition({ input }: { input: RenderInput }) {
           durationInFrames={clip.durationInFrames}
           premountFor={fps}
         >
-          <ClipContent clip={clip} />
+          <ClipContent clip={clip} captionPreview={captionPreview} />
         </Sequence>
       ))}
     </AbsoluteFill>
   );
 }
-function ClipContent({ clip }: { clip: CompositionClip }) {
+function ClipContent({
+  clip,
+  captionPreview,
+}: {
+  clip: CompositionClip;
+  captionPreview?: { id: string; box: Caption["box"] } | null;
+}) {
   const [decodeFailed, setDecodeFailed] = useState(false);
   const onMediaError = (error: Error) => {
     if (getRemotionEnvironment().isRendering) cancelRender(error);
     else setDecodeFailed(true);
   };
-  const { width, height } = useVideoConfig(),
+  const { width, height, fps } = useVideoConfig(),
     frame = useCurrentFrame();
-  const layer = clip.layer;
+  const original = clip.layer;
+  const layer =
+    original?.type === "caption" && captionPreview?.id === original.id
+      ? {
+          ...original,
+          properties: {
+            ...original.properties,
+            caption: { ...captionForLayer(original, { width, height }), box: captionPreview.box },
+          },
+        }
+      : original;
   const transform = pose(clip.motion?.keyframes ?? [], basePose(layer), frame);
   const style: CSSProperties = {
     position: "absolute",
@@ -71,6 +104,25 @@ function ClipContent({ clip }: { clip: CompositionClip }) {
     justifyContent: "center",
     overflow: "hidden",
   };
+  if (layer?.type === "caption")
+    return (
+      <div
+        style={{
+          ...style,
+          translate: `${transform.x - layer.position.x}px ${transform.y - layer.position.y}px`,
+          rotate: `${transform.rotation - layer.rotation}deg`,
+          opacity: layer.opacity ? transform.opacity / layer.opacity : 0,
+        }}
+        data-composition-clip={clip.id}
+      >
+        <CaptionContent
+          layer={layer}
+          duration={clip.durationInFrames}
+          offsetFrames={clip.from - clip.startSeconds * fps}
+          pages={clip.captionPages}
+        />
+      </div>
+    );
   if (clip.type === "audio" && decodeFailed)
     return (
       <div
@@ -123,7 +175,11 @@ function ClipContent({ clip }: { clip: CompositionClip }) {
         muted={clip.muted}
         crossOrigin="anonymous"
         onError={onMediaError}
-        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: layer?.type === "video" ? layer.properties.fit || "contain" : "contain",
+        }}
       />
     );
   else if (clip.type === "image" && clip.src)
@@ -138,7 +194,7 @@ function ClipContent({ clip }: { clip: CompositionClip }) {
         }}
       />
     );
-  else if (layer?.type === "text" || layer?.type === "caption")
+  else if (layer?.type === "text")
     content = (
       <div
         style={{

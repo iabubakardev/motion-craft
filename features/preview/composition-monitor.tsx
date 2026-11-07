@@ -1,6 +1,9 @@
 "use client";
+import type { Caption } from "@/core/captions/presets.cjs";
+import { CaptionCanvas } from "@/features/captions/caption-canvas";
+import type { ProjectDocumentController } from "@/features/projects/use-project-document";
 import { Player } from "@remotion/player";
-import { useMemo, useRef, useImperativeHandle } from "react";
+import { useMemo, useRef, useImperativeHandle, useState } from "react";
 import type { Ref, CSSProperties } from "react";
 import type { Project } from "@/core/project/types";
 import type { MediaAsset } from "@/core/media/types";
@@ -15,11 +18,16 @@ export function CompositionMonitor({
   project,
   assets,
   controlsRef,
+  document: doc,
 }: {
   project: Project;
   assets: MediaAsset[];
   controlsRef: Ref<PreviewMonitorHandle>;
+  document: ProjectDocumentController;
 }) {
+  const [captionPreview, setCaptionPreview] = useState<{ id: string; box: Caption["box"] } | null>(
+    null,
+  );
   const root = useRef<HTMLElement>(null),
     store = useTimelineStoreApi();
   const input = useMemo(
@@ -71,7 +79,7 @@ export function CompositionMonitor({
           <Player
             ref={connect}
             component={ProjectComposition}
-            inputProps={{ input }}
+            inputProps={{ input, captionPreview }}
             durationInFrames={model.durationInFrames}
             compositionWidth={model.width}
             compositionHeight={model.height}
@@ -84,6 +92,12 @@ export function CompositionMonitor({
                 Source/Timeline to retry.
               </p>
             )}
+          />
+          <CaptionCanvas
+            project={project}
+            document={doc}
+            onPreview={setCaptionPreview}
+            onBegin={() => player.current?.pause()}
           />
           <CanvasRangeOverlay duration={model.durationInFrames} background={model.background} />
         </div>

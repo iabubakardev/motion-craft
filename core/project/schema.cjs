@@ -109,7 +109,9 @@ const layerSchema = z
         ...baseLayer,
         type: z.literal("video"),
         assetId: idSchema,
-        properties: playableProperties,
+        properties: playableProperties
+          .extend({ fit: z.enum(["contain", "cover"]).optional() })
+          .strict(),
       })
       .strict(),
     z
@@ -121,7 +123,15 @@ const layerSchema = z
       })
       .strict(),
     z.object({ ...baseLayer, type: z.literal("text"), properties: textProperties }).strict(),
-    z.object({ ...baseLayer, type: z.literal("caption"), properties: textProperties }).strict(),
+    z
+      .object({
+        ...baseLayer,
+        type: z.literal("caption"),
+        properties: textProperties
+          .extend({ caption: require("../captions/schema.cjs").captionSchema.optional() })
+          .strict(),
+      })
+      .strict(),
     z
       .object({
         ...baseLayer,
@@ -138,6 +148,15 @@ const layerSchema = z
       .strict(),
   ])
   .superRefine((layer, ctx) => {
+    if (
+      layer.type === "caption" &&
+      layer.properties.caption?.words.some((word) => word.end > layer.duration + 1e-6)
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["properties", "caption", "words"],
+        message: "Word alignment exceeds caption duration",
+      });
     if (layer.animation.duration > layer.duration)
       ctx.addIssue({
         code: "custom",
@@ -153,7 +172,7 @@ const sceneSchema = z
     duration,
     narration: z.string().max(50000),
     stylePreset: styleSchema,
-    layers: z.array(layerSchema).max(1000),
+    layers: z.array(layerSchema).max(10000),
     transitionIn: transitionSchema,
     transitionOut: transitionSchema,
     metadata: z

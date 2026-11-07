@@ -86,3 +86,9 @@ Add dated entries when making or changing significant technical decisions.
 - Keep native forms, Zod, existing hooks and the Node/Electron runners. No dependencies are added. Real tiny/CPU/int8 and Electron review/preview/history/persistence/cancellation pass; GPU, packaging and broad codec/performance gates remain open.
 
 - Development transcription detects the user-managed `tools/motion-craft-ai` checkout when saved settings/files are missing; valid settings retain priority. Discovery stays in Electron and exposes no renderer path-setting capability. Packaged builds retain native manual setup. See TRANSCRIPTION.md.
+
+## Phase 7.4 caption decisions
+
+Extend schema v4 caption properties with an optional strict version-1 visual payload; preserve old documents and reject unsupported fields in older applications. Keep transcript originals separate from editable visual word ranges. Use existing scene ownership, track locks, frame commands, snapshot history and timeline selection rather than adding another timeline store. CJS caption contracts/helpers are shared by Electron acceptance and the existing Node tests; strict TS owns React UI. Six resolved presets require no font/network/dependency download. Preview and export use one deterministic renderer. Gesture preview is transient and commits once; new-project generation guards reject obsolete commits. See CAPTIONS.md for complete workflow, tests and deferred boundaries.
+
+Spoken-caption display modes are optional visual-style data, leaving transcript originals untouched. Templates default to the persisted generated caption set; individual overrides remain explicit. Preserve audio/visual track compatibility and offer compact rows plus AddTrack rather than changing project ownership rules. Background replacement is one undoable edit to an ordinary bottom track; video is cover-fitted, muted and never extended beyond its source. Existing captions/narration and unrelated tracks remain unchanged.

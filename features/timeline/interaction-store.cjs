@@ -20,6 +20,8 @@ function createTimelineStore() {
     viewportWidth: 900,
     viewportHeight: 180,
     snapEnabled: true,
+    captionGuides: true,
+    setCaptionGuides: (captionGuides) => set({ captionGuides }),
     dragAssetId: null,
     drag: null,
     clipboard: [],
@@ -46,6 +48,7 @@ function createTimelineStore() {
       set({
         monitor: "timeline",
         playing: false,
+        captionGuides: true,
         selectedIds: [],
         activeTrackId: null,
         playheadFrame: 0,

@@ -105,7 +105,24 @@ function generateCaptions(rawProject, raw, offsetFrames = 0) {
         opacity: 1,
         zIndex: 100,
         animation: { preset: "none", duration: 0 },
-        properties: { text: segment.text, fontSize: 48, fontFamily: "system", color: "#ffffff" },
+        properties: {
+          text: segment.text,
+          fontSize: 48,
+          fontFamily: "system",
+          color: "#ffffff",
+          caption: {
+            ...require("../captions/presets.cjs").makeCaption(),
+            words: require("../captions/presets.cjs").cropWords(
+              segment.words.map((w) => ({
+                text: w.text,
+                start: w.start - segment.start,
+                end: w.end - segment.start,
+              })),
+              framesToSeconds(a, project.fps) - segment.start - offsetFrames / project.fps,
+              framesToSeconds(b - a, project.fps),
+            ),
+          },
+        },
       });
     }
   }
@@ -129,4 +146,59 @@ function generateCaptions(rawProject, raw, offsetFrames = 0) {
   const next = rebuildProject({ ...project, scenes, tracks });
   return saveTranscript(next, { ...transcript, captionIds });
 }
-module.exports = { editTranscript, saveTranscript, generateCaptions };
+/** Generate only the audible source range at the selected timeline clip's placement.
+ * @param {import('../project/types').Project} project @param {unknown} raw @param {string} clipId */
+function generateCaptionsForClip(project, raw, clipId) {
+  const transcript = transcriptSchema.parse(raw),
+    index = require("../timeline/commands.cjs").createTimelineIndex(project),
+    item = index.clips.get(clipId);
+  if (
+    !item ||
+    item.asset?.id !== transcript.assetId ||
+    item.clip.sourceStart === null ||
+    item.clip.sourceEnd === null
+  )
+    throw new Error("The selected audio clip changed or is no longer available.");
+  const existing = project.transcripts.find((t) => t.id === transcript.id);
+  if (
+    [...transcript.captionIds, ...(existing?.captionIds || [])].some((id) =>
+      project.tracks.some((t) => t.clips.some((c) => c.id === id)),
+    )
+  )
+    throw new Error(
+      "This transcript already has captions. Select the existing caption track to edit them.",
+    );
+  const clip = item.clip,
+    sourceStart = clip.sourceStart,
+    sourceEnd = clip.sourceEnd;
+  if (sourceStart === null || sourceEnd === null) throw new Error("Source range is unavailable.");
+  const cues = transcript.result.segments.flatMap((segment) => {
+    const a = Math.max(segment.start, sourceStart),
+      b = Math.min(segment.end, sourceEnd);
+    if (b <= a) return [];
+    const words = require("../captions/presets.cjs").cropWords(
+      segment.words.map((w) => ({ text: w.text, start: w.start, end: w.end })),
+      a,
+      b - a,
+    );
+    return [
+      {
+        start: clip.start + a - sourceStart,
+        end: clip.start + b - sourceStart,
+        text: words.length ? words.map((w) => w.text.trim()).join(" ") : segment.text,
+        words,
+      },
+    ];
+  });
+  if (!cues.length) throw new Error("No speech overlaps the selected clip's source range.");
+  const { appendCues, captionRecords } = require("../captions/commands.cjs"),
+    before = new Set(captionRecords(project).map((r) => r.layer.id));
+  const next = appendCues(project, cues, stableId(`${transcript.id}:clip:${clipId}`));
+  return saveTranscript(next, {
+    ...transcript,
+    captionIds: captionRecords(next)
+      .filter((r) => !before.has(r.layer.id))
+      .map((r) => r.layer.id),
+  });
+}
+module.exports = { editTranscript, saveTranscript, generateCaptions, generateCaptionsForClip };

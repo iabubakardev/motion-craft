@@ -22,7 +22,7 @@ const frame = z
 const ids = z
   .array(idSchema)
   .min(1)
-  .max(1000)
+  .max(10000)
   .refine((values) => new Set(values).size === values.length, "Selection IDs must be unique");
 const clipboardItemSchema = z
   .object({
@@ -33,6 +33,9 @@ const clipboardItemSchema = z
   })
   .strict();
 const commandSchema = z.discriminatedUnion("type", [
+  z
+    .object({ type: z.literal("AddTrack"), trackId: idSchema, kind: z.enum(["video", "audio"]) })
+    .strict(),
   z
     .object({
       type: z.literal("InsertClip"),
@@ -150,6 +153,19 @@ function change(item, clip) {
   };
   if ((layer.type === "video" || layer.type === "audio") && clip.sourceStart !== null)
     layer = { ...layer, properties: { ...layer.properties, sourceStart: clip.sourceStart } };
+  if (
+    layer.type === "caption" &&
+    layer.properties.caption &&
+    clip.duration !== item.clip.duration
+  ) {
+    const caption = layer.properties.caption;
+    const words = require("../captions/presets.cjs").cropWords(
+      caption.words,
+      clip.start - item.clip.start,
+      clip.duration,
+    );
+    layer = { ...layer, properties: { ...layer.properties, caption: { ...caption, words } } };
+  }
   return { clip, layer, sceneId: item.scene.id };
 }
 
@@ -332,6 +348,34 @@ function planTimelineEdit(project, input, index = createTimelineIndex(project)) 
         sourceStart: old.sourceStart === null ? null : old.sourceStart + at - old.start,
       });
       if (right.layer) right.layer = { ...right.layer, id: command.newClipId };
+      if (
+        item.layer?.type === "caption" &&
+        left.layer?.type === "caption" &&
+        right.layer?.type === "caption"
+      ) {
+        const words = item.layer.properties.caption?.words;
+        if (words?.length) {
+          left.layer = {
+            ...left.layer,
+            properties: {
+              ...left.layer.properties,
+              text:
+                left.layer.properties.caption?.words.map((w) => w.text.trim()).join(" ") ||
+                item.layer.properties.text,
+            },
+          };
+          right.layer = {
+            ...right.layer,
+            properties: {
+              ...right.layer.properties,
+              text:
+                right.layer.properties.caption?.words.map((w) => w.text.trim()).join(" ") ||
+                item.layer.properties.text,
+            },
+          };
+        }
+      }
+
       plan = { removed: [old.id], changes: [left, right] };
       break;
     }
@@ -380,6 +424,7 @@ function planTimelineEdit(project, input, index = createTimelineIndex(project)) 
       });
       break;
     }
+    case "AddTrack":
     case "UpdateTrack":
       return plan;
     default:
@@ -411,6 +456,29 @@ function executeTimelineCommand(project, input, timestamp) {
   const command = commandSchema.parse(input);
   const parsed = projectSchema.parse(project);
   z.iso.datetime().parse(timestamp);
+  if (command.type === "AddTrack") {
+    if (parsed.tracks.length >= 64) throw new Error("The project has reached its 64-track limit.");
+    if (parsed.tracks.some((t) => t.id === command.trackId))
+      throw new Error("Track ID already exists.");
+    const tracks = [...parsed.tracks].sort((a, b) => a.order - b.order),
+      background = tracks.findIndex((t) => t.id === stableId(`${parsed.id}:background`));
+    tracks.splice(background < 0 ? tracks.length : background, 0, {
+      id: command.trackId,
+      name: `${command.kind === "video" ? "Visual" : "Audio"} ${tracks.filter((t) => t.type === command.kind).length + 1}`,
+      type: command.kind,
+      order: 0,
+      visible: true,
+      muted: false,
+      locked: false,
+      height: 48,
+      clips: [],
+    });
+    return projectSchema.parse({
+      ...parsed,
+      tracks: tracks.map((t, order) => ({ ...t, order })),
+      updatedAt: timestamp,
+    });
+  }
   if (command.type === "UpdateTrack") {
     const track = parsed.tracks.find((track) => track.id === command.trackId);
     if (!track) throw new Error("Track no longer exists.");

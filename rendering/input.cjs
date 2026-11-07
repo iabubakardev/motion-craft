@@ -49,9 +49,16 @@ function buildComposition(value) {
               id: clip.id,
               type,
               from,
+              startSeconds: clip.start,
               durationInFrames: end - from,
               sourceStart,
               layer,
+              captionPages:
+                layer?.type === "caption"
+                  ? require("../core/captions/engine.cjs").captionPages(
+                      layer.properties.caption?.words || [],
+                    )
+                  : [],
               motion: project.animations[clip.id],
               assetId,
               src: assetId ? input.sources[assetId] || null : null,

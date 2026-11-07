@@ -133,6 +133,45 @@ if (!python || !worker || !audio) {
         console.log(
           "PASS: AI Production selects configured tiny model and reviews external transcription.",
         );
+        const contextProject = await exported(),
+          audioTrack = contextProject.tracks.find((t) => t.type === "audio");
+        assert.equal(
+          await evaluate(
+            `document.querySelector('[aria-label="Caption templates"]').querySelectorAll('button').length`,
+          ),
+          6,
+        );
+        await evaluate(
+          `(()=>{const card=document.querySelector('ul[aria-label="Imported media"] button'),data=new DataTransfer();card.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer:data}));const row=document.querySelector('[data-track-id="${audioTrack.id}"]'),r=row.getBoundingClientRect();row.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data,clientX:r.left+196,clientY:r.top+15}));card.dispatchEvent(new DragEvent('dragend',{bubbles:true,dataTransfer:data}));})()`,
+        );
+        await wait(`document.querySelectorAll('[data-clip-id]').length===1`);
+        const audioClip = (await exported()).tracks.flatMap((t) => t.clips)[0];
+        await evaluate(
+          `document.querySelector('[data-clip-id="${audioClip.id}"]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:400,clientY:500}))`,
+        );
+        await wait(
+          `Array.from(document.querySelectorAll('[role="menuitem"]')).some(e=>e.textContent.trim()==='Generate captions'&&!e.disabled)`,
+        );
+        await evaluate(
+          `Array.from(document.querySelectorAll('[role="menuitem"]')).find(e=>e.textContent.trim()==='Generate captions').click()`,
+        );
+        await wait(
+          `document.querySelector('[aria-label="Transcription source"]')?.value===${JSON.stringify(audioClip.assetId)}`,
+        );
+        assert.ok(
+          await evaluate(`document.querySelector('[aria-label="Transcription source"]').disabled`),
+        );
+        assert.ok(
+          await evaluate(
+            `document.querySelector('dialog[aria-label="Transcription"] h2').textContent==='Generate captions'`,
+          ),
+        );
+        await click("Close transcription");
+        await click("Undo");
+        await wait(`document.querySelectorAll('[data-clip-id]').length===0`);
+        console.log(
+          "PASS: audio right-click Generate captions preselects source and clip range; six templates visible before generation",
+        );
         await click("Transcribe");
         console.log("CHECK: transcription panel opened");
         await wait(

@@ -1,4 +1,5 @@
 "use client";
+import { useBoxSelection } from "./use-box-selection";
 import { KeyframeMarkers } from "./keyframe-markers";
 import type { ProjectDocumentController } from "@/features/projects/use-project-document";
 import { EditorIcon } from "@/features/editor/editor-icon";
@@ -34,17 +35,10 @@ interface Props {
   onScene: (id: string) => void;
   onLayer: (sceneId: string, layerId: string) => void;
   onAsset: (id: string) => void;
+  onGenerateCaptions: (assetId: string, clipId: string) => void;
+  onSetBackground: (assetId: string) => void;
 }
 const HEADER = 196;
-const TRACK_ROLES: Record<string, string> = {
-  V1: "Main video",
-  V2: "Overlay",
-  V3: "Graphics",
-  V4: "Captions",
-  A1: "Narration",
-  A2: "Music",
-  A3: "SFX",
-};
 export const TimelinePanel = memo(function TimelinePanel({
   assets,
   project,
@@ -56,6 +50,8 @@ export const TimelinePanel = memo(function TimelinePanel({
   onScene,
   onLayer,
   onAsset,
+  onGenerateCaptions,
+  onSetBackground,
 }: Props) {
   const store = useTimelineStoreApi(),
     viewport = useRef<HTMLDivElement>(null);
@@ -79,10 +75,23 @@ export const TimelinePanel = memo(function TimelinePanel({
       ),
     [assets],
   );
+  const [showEmptyTracks, setShowEmptyTracks] = useState(false);
   const tracks = useMemo(
     () => [...project.tracks].sort((a, b) => a.order - b.order),
     [project.tracks],
   );
+  const visibleTracks = useMemo(() => {
+    if (showEmptyTracks) return tracks;
+    const spareVideo = tracks.find((t) => t.type === "video" && !t.clips.length && !t.locked),
+      spareAudio = tracks.find((t) => t.type === "audio" && !t.clips.length && !t.locked);
+    return tracks.filter(
+      (t) =>
+        t.clips.length ||
+        t.id === activeTrackId ||
+        t.id === spareVideo?.id ||
+        t.id === spareAudio?.id,
+    );
+  }, [tracks, showEmptyTracks, activeTrackId]);
   useEffect(
     () =>
       store.subscribe((state, previous) => {
@@ -97,6 +106,18 @@ export const TimelinePanel = memo(function TimelinePanel({
     [store, project.fps],
   );
   const gesture = useClipGesture(project, execute, viewport, busy);
+  const [boxSelect, setBoxSelect] = useState(false);
+  const marquee = useBoxSelection(project, viewport, busy, boxSelect);
+  const captionIds = useMemo(
+    () =>
+      [...index.clips.values()]
+        .filter((item) => item.layer?.type === "caption")
+        .map((item) => item.clip.id),
+    [index],
+  );
+  const selectedLocked = useTimeline((s) =>
+    s.selectedIds.some((id) => index.clips.get(id)?.track.locked),
+  );
   const [context, setContext] = useState<{
     x: number;
     y: number;
@@ -237,7 +258,8 @@ export const TimelinePanel = memo(function TimelinePanel({
             state.setSelection([clip.dataset.clipId]);
           clip.focus({ preventScroll: true });
         } else state.setSelection([]);
-        const target = clip || event.currentTarget,
+        const target =
+            clip || event.target.closest<HTMLElement>(".timeline-track") || event.currentTarget,
           rect = target.getBoundingClientRect();
         setContext({
           x: event.clientX || rect.left + 12,
@@ -321,7 +343,45 @@ export const TimelinePanel = memo(function TimelinePanel({
               !locked &&
               frame / project.fps > one.clip.start + 1e-6 &&
               frame / project.fps < one.clip.start + one.clip.duration - 1e-6;
+            const targetId = context.target.dataset.clipId;
+            const target = targetId ? index.clips.get(targetId) : undefined;
+            const trackId = context.target.closest<HTMLElement>("[data-track-id]")?.dataset.trackId;
+            const audio =
+              target?.asset?.type === "audio"
+                ? target
+                : !targetId
+                  ? project.tracks
+                      .find((t) => t.id === trackId && t.type === "audio")
+                      ?.clips.map((c) => index.clips.get(c.id))
+                      .find((r) => r?.asset?.type === "audio")
+                  : undefined;
             return [
+              ...(target?.asset && target.asset.type !== "audio"
+                ? [
+                    {
+                      label: "Set as background",
+                      disabled: !assets.some(
+                        (a) => a.id === target.asset?.id && a.status !== "error",
+                      ),
+                      run: () => {
+                        if (target.asset) onSetBackground(target.asset.id);
+                      },
+                    },
+                  ]
+                : []),
+              ...(audio?.asset
+                ? [
+                    {
+                      label: "Generate captions",
+                      disabled: !assets.some(
+                        (a) => a.id === audio.asset?.id && a.status !== "error",
+                      ),
+                      run: () => {
+                        if (audio.asset) onGenerateCaptions(audio.asset.id, audio.clip.id);
+                      },
+                    },
+                  ]
+                : []),
               {
                 label: "Split at playhead",
                 icon: "split",
@@ -369,7 +429,7 @@ export const TimelinePanel = memo(function TimelinePanel({
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--editor-border)] px-2 py-1 text-[10px]">
         <h2>Timeline</h2>
         <TimelineReadout fps={project.fps} />
-        {(["split", "delete", "duplicate", "copy", "paste"] as const).map((name) => (
+        {(["split", "duplicate", "copy", "paste"] as const).map((name) => (
           <button
             key={name}
             type="button"
@@ -390,6 +450,65 @@ export const TimelinePanel = memo(function TimelinePanel({
             <span className="sr-only">{name}</span>
           </button>
         ))}
+        <button
+          className="editor-secondary !px-2 !py-1"
+          aria-label="Box select clips"
+          aria-pressed={boxSelect}
+          disabled={busy}
+          onClick={() => setBoxSelect(!boxSelect)}
+        >
+          Box select
+        </button>
+        <button
+          className="editor-secondary !px-2 !py-1"
+          aria-label="Select all captions"
+          disabled={busy || !captionIds.length}
+          onClick={() => store.getState().setSelection(captionIds)}
+        >
+          Select captions
+        </button>
+        <button
+          className="editor-secondary !px-2 !py-1"
+          aria-label="delete timeline clips"
+          disabled={busy || !selectedCount || selectedLocked}
+          title={
+            selectedLocked
+              ? "Unlock selected tracks before deleting"
+              : "Delete selection (Delete key)"
+          }
+          onClick={() => action("delete")}
+        >
+          Delete selected{selectedCount ? ` (${selectedCount})` : ""}
+        </button>
+        <span className="text-[var(--editor-muted)]">
+          Drag empty space to select; Box select also starts over clips
+        </span>
+        {(["video", "audio"] as const).map((kind) => (
+          <button
+            key={kind}
+            className="editor-secondary !px-2 !py-1"
+            aria-label={`Add ${kind === "video" ? "visual" : "audio"} track`}
+            disabled={busy || tracks.length >= 64}
+            onClick={() => {
+              const trackId = crypto.randomUUID();
+              if (execute({ type: "AddTrack", trackId, kind }, project))
+                store.getState().selectTrack(trackId);
+            }}
+          >
+            + {kind === "video" ? "Visual" : "Audio"}
+          </button>
+        ))}
+        <button
+          className="editor-secondary !px-2 !py-1"
+          aria-label="Show all timeline tracks"
+          aria-pressed={showEmptyTracks}
+          onClick={() => setShowEmptyTracks(!showEmptyTracks)}
+        >
+          {showEmptyTracks ? "Compact tracks" : "Show all tracks"}
+        </button>
+        <span className="text-[var(--editor-muted)]">
+          Visual rows accept images, video, text and captions
+        </span>
         <SnapButton />
         <button
           type="button"
@@ -449,6 +568,8 @@ export const TimelinePanel = memo(function TimelinePanel({
         ref={viewport}
         className="timeline-scroll min-h-0 flex-1 overflow-auto"
         aria-label="Scrollable timeline"
+        tabIndex={-1}
+        onPointerDownCapture={marquee.begin}
         onScroll={(e) =>
           store.getState().setView({
             scrollLeft: e.currentTarget.scrollLeft,
@@ -507,7 +628,7 @@ export const TimelinePanel = memo(function TimelinePanel({
               timing. Audio needs an audio track.
             </p>
           )}
-          {tracks.map((track) => (
+          {visibleTracks.map((track) => (
             <div
               key={track.id}
               data-track-id={track.id}
@@ -554,7 +675,7 @@ export const TimelinePanel = memo(function TimelinePanel({
               >
                 <button
                   aria-pressed={activeTrackId === track.id}
-                  title={`${track.name}: ${TRACK_ROLES[track.name] || track.type}`}
+                  title={`${track.name}: ${track.type === "video" ? "Visual track: image, video, text or captions" : "Audio track"}`}
                   className={`w-8 shrink-0 ${activeTrackId === track.id ? "text-cyan-300 ring-1 ring-cyan-300" : ""}`}
                   onClick={() => store.getState().selectTrack(track.id)}
                 >
@@ -710,6 +831,18 @@ export const TimelinePanel = memo(function TimelinePanel({
               </div>
             </div>
           ))}
+          {marquee.box && (
+            <div
+              aria-label="Timeline selection rectangle"
+              className="pointer-events-none absolute z-40 border border-cyan-300 bg-cyan-300/15"
+              style={{
+                left: marquee.box.left,
+                top: marquee.box.top,
+                width: marquee.box.width,
+                height: marquee.box.height,
+              }}
+            />
+          )}
           <Playhead zoom={zoom} fps={project.fps} />
         </div>
       </div>

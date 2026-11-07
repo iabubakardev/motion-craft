@@ -229,7 +229,17 @@ function updateLayer(project, sceneId, layerId, patch) {
     ...layer,
     ...common,
     ...(text !== undefined && (layer.type === "text" || layer.type === "caption")
-      ? { properties: { ...layer.properties, text } }
+      ? {
+          properties: {
+            ...layer.properties,
+            text,
+            ...(layer.type === "caption" &&
+            layer.properties.caption &&
+            text !== layer.properties.text
+              ? { caption: { ...layer.properties.caption, words: [] } }
+              : {}),
+          },
+        }
       : {}),
   };
   if (JSON.stringify(updated) === JSON.stringify(layer)) return project;

@@ -14,7 +14,14 @@ import type { Layer, Project, ProjectHistory, ValidationIssue } from "@/core/pro
 import * as operations from "@/core/project/operations.cjs";
 import { createHistory, commitProject, undoProject, redoProject } from "@/core/project/history.cjs";
 import { fpsSchema, serializeProject } from "@/core/project/schema.cjs";
-import { saveTranscript, generateCaptions } from "@/core/transcription/commands.cjs";
+import { setProjectBackground } from "@/core/project/background.cjs";
+import { executeCaptionCommand } from "@/core/captions/commands.cjs";
+import type { commandSchema as captionCommandSchema } from "@/core/captions/commands.cjs";
+import {
+  saveTranscript,
+  generateCaptions,
+  generateCaptionsForClip,
+} from "@/core/transcription/commands.cjs";
 import {
   activateProject,
   isProjectDesktopAvailable,
@@ -348,13 +355,33 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
           );
         return saveTranscript(project, transcript);
       }),
-    generateCaptions: (transcript: unknown, expected: Project, offsetFrames: number) =>
+    generateCaptions: (
+      transcript: unknown,
+      expected: Project,
+      offsetFrames: number,
+      clipId?: string,
+    ) =>
       !!mutate((project) => {
         if (project.id !== expected.id || project.fps !== expected.fps)
           throw new Error(
             "The project changed. Reopen transcription review against the current project.",
           );
+        if (clipId) {
+          const clip = (p: Project) =>
+            p.tracks.flatMap((t) => t.clips).find((c) => c.id === clipId);
+          if (JSON.stringify(clip(project)) !== JSON.stringify(clip(expected)))
+            throw new Error("The audio clip changed during review. Reopen Generate captions.");
+          return generateCaptionsForClip(project, transcript, clipId);
+        }
         return generateCaptions(project, transcript, offsetFrames);
+      }),
+    setBackground: (assetId: string) =>
+      !!mutate((project) => setProjectBackground(project, assetId)),
+    executeCaption: (command: z.infer<typeof captionCommandSchema>, expected?: Project) =>
+      !!mutate((project) => {
+        if (expected && expected !== project)
+          throw new Error("The project changed during the caption edit. Try again.");
+        return executeCaptionCommand(project, command);
       }),
     executeTimeline,
     executeMotion,

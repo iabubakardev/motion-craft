@@ -26,3 +26,7 @@ Next.js/Electron development, scene/layer editing, strict JSON exchange, native 
 For full requirements consult `MotionCraft_Project_Handoff.md` when present in the repository or conversation.
 
 Transcription uses the separate Python worker repository through protocol v1. Project v4 stores transcripts and generated caption references; older formats migrate with review. See [Transcription](TRANSCRIPTION.md).
+
+Phase 7.4 adds a dedicated caption inspector, six reusable styles, normalized preview gestures, deterministic word highlighting/reveal, reviewed-word regrouping and SRT/VTT exchange. The existing timeline, project history, original transcript archive and shared preview/export composition remain authoritative. See CAPTIONS.md for limits.
+
+Caption playback can follow short spoken phrases or the current word, and templates target the generated caption set by default. The compact timeline hides surplus empty rows without removing data and permits adding visual/audio tracks. Image/video backgrounds reuse normal scene layers, existing native media bindings, history and shared rendering. See CAPTIONS.md for controls and limits.

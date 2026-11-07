@@ -65,6 +65,16 @@ function Workspace() {
   };
   const [aiOpen, setAIOpen] = useState(false);
   const [transcriptionOpen, setTranscriptionOpen] = useState(false);
+  const [captionSource, setCaptionSource] = useState<{ assetId: string; clipId?: string } | null>(
+    null,
+  );
+  const applyBackground = (assetId: string) => {
+    if (doc.setBackground(assetId)) setMonitor("timeline");
+  };
+  const openCaptions = (assetId?: string, clipId?: string) => {
+    setCaptionSource(assetId ? { assetId, clipId } : null);
+    setTranscriptionOpen(true);
+  };
   const [exportOpen, setExportOpen] = useState(false);
   const previewRef = useRef<PreviewMonitorHandle>(null);
   const { clearSelection } = doc;
@@ -123,7 +133,7 @@ function Workspace() {
               className="editor-secondary !px-2"
               aria-label="Transcribe"
               disabled={!doc.ready || doc.busy}
-              onClick={() => setTranscriptionOpen(true)}
+              onClick={() => openCaptions()}
             >
               Transcribe
             </button>
@@ -174,15 +184,27 @@ function Workspace() {
           key={`${doc.project.id}:${doc.documentGeneration}`}
           project={doc.project}
           assets={library.assets}
+          initialAssetId={captionSource?.assetId}
+          sourceClipId={captionSource?.clipId}
           onImport={library.importMedia}
           importing={library.importing}
           onClose={() => setTranscriptionOpen(false)}
           onSave={doc.saveTranscript}
           onCaptions={(transcript, expected, offset) => {
-            const applied = doc.generateCaptions(transcript, expected, offset);
+            const applied = doc.generateCaptions(
+              transcript,
+              expected,
+              offset,
+              captionSource?.clipId,
+            );
             if (applied) {
               setMonitor("timeline");
-              timeline.getState().setPlayhead(offset);
+              const clip = expected.tracks
+                .flatMap((t) => t.clips)
+                .find((c) => c.id === captionSource?.clipId);
+              timeline
+                .getState()
+                .setPlayhead(clip ? secondsToFrames(clip.start, expected.fps) : offset);
             }
             return applied;
           }}
@@ -258,6 +280,7 @@ function Workspace() {
             </div>
             {monitor === "timeline" ? (
               <CompositionMonitor
+                document={doc}
                 key={`${doc.project.id}:${doc.documentGeneration}`}
                 project={doc.project}
                 assets={library.assets}
@@ -285,7 +308,13 @@ function Workspace() {
             onResize={(value) => resizePanel("right", value)}
             onReset={() => resetPanel("right")}
           />
-          <PropertiesInspector asset={selected} project={projectSettings} document={doc} />
+          <PropertiesInspector
+            asset={selected}
+            project={projectSettings}
+            document={doc}
+            onGenerateCaptions={openCaptions}
+            onSetBackground={applyBackground}
+          />
         </div>
         <PanelResizeHandle
           label="Resize timeline"
@@ -305,6 +334,7 @@ function Workspace() {
           documentGeneration={doc.documentGeneration}
           busy={
             aiOpen ||
+            transcriptionOpen ||
             doc.busy ||
             exportOpen ||
             state.settingsOpen ||
@@ -317,6 +347,8 @@ function Workspace() {
           onScene={doc.selectScene}
           onLayer={doc.selectLayer}
           onAsset={doc.selectMedia}
+          onGenerateCaptions={openCaptions}
+          onSetBackground={applyBackground}
         />
       </div>
       <footer className="editor-statusbar">

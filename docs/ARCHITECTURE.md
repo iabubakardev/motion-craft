@@ -152,3 +152,9 @@ The checked-JSDoc `ScenePlanningProvider` contract in `workers/ollama.cjs` expos
 ## Phase 7.3 external transcription
 
 `core/transcription` owns protocol/result/review schemas, inferred TypeScript contracts and pure caption/edit operations. `workers/transcription.cjs` adapts the external Python module with bounded UTF-8 NDJSON parsing; `workers/ai.cjs` orchestrates it through the existing supervised job channel. `electron/transcription-settings.cjs` owns native-selected interpreter/entrypoint configuration. Existing AI preload gains only typed settings read/configure methods and the asset-ID-based transcription request/result variant. `features/ai/transcription-panel.tsx` owns transient review and source seeking. Project/history remain authoritative; schema v4 adds persisted transcripts with strict v1?v3 migration. Caption layers reuse the existing inspector/timeline/Remotion composition. See [Transcription](TRANSCRIPTION.md).
+
+## Phase 7.4 caption editor
+
+The optional version-1 caption-layer visual extension, immutable caption commands, word grouping and subtitle formats live in core/captions. Inspector/canvas controls reuse the existing document/history and timeline selection store; live box previews are transient Player props. Shared CaptionContent renders the same frame-derived animation in preview and MP4. No Python or native bridge capability was added. See [Caption editor](CAPTIONS.md).
+
+Background placement reuses ordinary scene layers on a dedicated bottom visual track and the existing document/history API. Caption phrase pages are derived once in rendering/input.cjs and frame-selected in the shared renderer. Timeline compact-row visibility is local presentation state; AddTrack extends existing validated commands. No platform/IPC capability or Python service was added.

@@ -1,3 +1,4 @@
+import { CaptionInspector } from "@/features/captions/caption-inspector";
 import { AnimationProperties } from "./animation-properties";
 import { ClipProperties } from "@/features/timeline/clip-properties";
 import type { MediaAsset } from "@/core/media/types";
@@ -12,10 +13,14 @@ export function PropertiesInspector({
   asset,
   project,
   document: doc,
+  onGenerateCaptions,
+  onSetBackground,
 }: {
   asset: MediaAsset | undefined;
   project: ProjectPlaceholder;
   document: ProjectDocumentController;
+  onGenerateCaptions: (assetId?: string, clipId?: string) => void;
+  onSetBackground: (assetId: string) => void;
 }) {
   return (
     <aside
@@ -29,6 +34,25 @@ export function PropertiesInspector({
           {doc.selectedLayer ? "Layer" : asset ? "Source" : doc.activeScene ? "Scene" : "Project"}
         </span>
       </div>
+      {asset && asset.type !== "audio" && (
+        <div className="space-y-2 p-4">
+          <button
+            className="editor-primary w-full"
+            disabled={doc.busy || asset.status === "error"}
+            onClick={() => onSetBackground(asset.id)}
+          >
+            Set {asset.type} as background
+          </button>
+          <p className="text-[10px] text-[var(--editor-muted)]">
+            Fills the canvas behind captions. Video uses its available duration and starts muted.
+          </p>
+        </div>
+      )}
+      <CaptionInspector
+        document={doc}
+        onGenerateCaptions={onGenerateCaptions}
+        sourceAssetId={asset?.type === "audio" ? asset.id : undefined}
+      />
       <div className="p-4">
         {asset ? (
           <>
@@ -120,7 +144,7 @@ export function PropertiesInspector({
         )}
       </div>
       <ClipProperties document={doc} />
-      <LayerProperties document={doc} />
+      {doc.selectedLayer?.type !== "caption" && <LayerProperties document={doc} />}
       <AnimationProperties document={doc} />
       <SceneProperties document={doc} />
     </aside>

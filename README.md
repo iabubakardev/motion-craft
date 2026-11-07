@@ -165,3 +165,5 @@ Default endpoint: `http://127.0.0.1:11434`. Configure `MOTIONCRAFT_OLLAMA_URL` b
 ## External transcription (Phase 7.3 Part B)
 
 Use **Transcribe** to configure a native-selected Python interpreter and external `motion_craft_ai/worker.py`, transcribe imported audio/video locally, review/edit/seek segments, and generate ordinary editable captions in one undoable operation. Project v4 persists original/reviewed transcripts, model metadata and caption references; v1?v3 migrate with review. No dependencies were added and no external repository was modified. See [setup, protocol, limitations and real-worker tests](docs/TRANSCRIPTION.md).
+
+Phase 7.4 adds six editable caption presets, word-level frame animation, subtitle import/export, caption inspector and direct preview manipulation through existing project/history/timeline commands. See [Caption editor](docs/CAPTIONS.md) for workflow, tests and limits. Run `npm run test:captions` against the development server for isolated native UI and encoded-frame acceptance.

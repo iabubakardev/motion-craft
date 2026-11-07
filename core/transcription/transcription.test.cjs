@@ -147,3 +147,35 @@ test("caption deletion prunes persisted references and oversized reviews reject 
   assert.throws(() => saveTranscript(project, huge), /5 MB/);
   assert.equal(project.transcripts.length, 0);
 });
+
+test("audio clip caption generation maps trimmed source time to its timeline placement", () => {
+  const { generateCaptionsForClip } = require("./commands.cjs"),
+    { rebuildProject } = require("../project/operations.cjs");
+  const { project, transcript } = setup(),
+    track = project.tracks.find((t) => t.type === "audio"),
+    id = globalThis.crypto.randomUUID();
+  track.clips.push({
+    id,
+    assetId: transcript.assetId,
+    trackId: track.id,
+    start: 2,
+    duration: 0.5,
+    sourceStart: 0.4,
+    sourceEnd: 0.9,
+  });
+  const p = rebuildProject(project),
+    before = structuredClone(p),
+    next = generateCaptionsForClip(p, transcript, id);
+  const clips = next.tracks.find((t) => t.name === "Captions").clips;
+  assert.ok(clips.length);
+  assert.ok(clips.every((c) => c.start >= 2 && c.start + c.duration <= 2.5));
+  const layer = next.scenes.flatMap((s) => s.layers).find((l) => l.id === clips[0].id);
+  assert.equal(layer.properties.caption.words[0].start, 0);
+  assert.deepEqual(next.transcripts[0].originalSegments, transcript.originalSegments);
+  assert.deepEqual(p, before);
+  assert.throws(() => generateCaptionsForClip(next, next.transcripts[0], id), /already/);
+  assert.throws(
+    () => generateCaptionsForClip(p, transcript, globalThis.crypto.randomUUID()),
+    /changed/,
+  );
+});

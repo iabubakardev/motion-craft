@@ -21,8 +21,12 @@ export function TranscriptionPanel({
   importing,
   onSave,
   onCaptions,
+  initialAssetId,
+  sourceClipId,
 }: {
   project: Project;
+  initialAssetId?: string;
+  sourceClipId?: string;
   assets: MediaAsset[];
   onClose: () => void;
   onImport: () => Promise<MediaAsset[] | undefined>;
@@ -41,7 +45,9 @@ export function TranscriptionPanel({
   const [model, setModel] = useState<z.infer<typeof modelSchema>>("tiny"),
     [device, setDevice] = useState<z.infer<typeof deviceSchema>>("cpu"),
     [compute, setCompute] = useState<z.infer<typeof computeSchema>>("int8");
-  const [assetId, setAssetId] = useState(assets.find((a) => a.type !== "image")?.id || ""),
+  const [assetId, setAssetId] = useState(
+      initialAssetId || assets.find((a) => a.type !== "image" && a.status !== "error")?.id || "",
+    ),
     [draft, setDraft] = useState<Transcript | null>(null),
     [baseline, setBaseline] = useState(project),
     [offset, setOffset] = useState(0);
@@ -135,14 +141,26 @@ export function TranscriptionPanel({
     >
       <div className="space-y-4 p-5">
         <div className="flex justify-between">
-          <h2 className="text-lg font-semibold">Transcription</h2>
+          <h2 className="text-lg font-semibold">
+            {sourceClipId ? "Generate captions" : "Transcription"}
+          </h2>
           <button className="editor-secondary" onClick={onClose}>
             Close transcription
           </button>
         </div>
+        <p className="text-xs text-[var(--editor-muted)]">
+          1. Transcribe audio &nbsp; 2. Review text &nbsp; 3. Generate captions &nbsp; 4. Choose a
+          template in Properties
+        </p>
+        {sourceClipId && (
+          <p className="text-xs">
+            Captions will match this timeline clip, including its trimmed source range. Review a
+            saved transcript below or start transcription.
+          </p>
+        )}
         <button
           className="editor-secondary"
-          disabled={running || importing}
+          disabled={running || importing || !!sourceClipId}
           onClick={async () => {
             const selected = await onImport();
             if (!dialog.current?.open || !selected) return;
@@ -168,7 +186,7 @@ export function TranscriptionPanel({
           <select
             aria-label="Transcription source"
             className="editor-input w-full"
-            disabled={running}
+            disabled={running || !!sourceClipId}
             value={assetId}
             onChange={(e) => {
               setAssetId(e.target.value);
@@ -408,23 +426,27 @@ export function TranscriptionPanel({
                 />
               </article>
             ))}
-            <label className="block">
-              Caption offset (project frames)
-              <input
-                aria-label="Caption offset frames"
-                className="editor-input"
-                type="number"
-                min={0}
-                step={1}
-                value={offset}
-                onChange={(e) => setOffset(Number(e.target.value))}
-              />
-            </label>
-            <p className="text-xs">
-              Place source media on the timeline separately. Captions start at source timestamps
-              plus this offset. Existing captions are preserved. Generating twice from the same
-              saved transcript is rejected while its clips remain.
-            </p>
+            {!sourceClipId && (
+              <>
+                <label className="block">
+                  Caption offset (project frames)
+                  <input
+                    aria-label="Caption offset frames"
+                    className="editor-input"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={offset}
+                    onChange={(e) => setOffset(Number(e.target.value))}
+                  />
+                </label>
+                <p className="text-xs">
+                  Place source media on the timeline separately. Captions start at source timestamps
+                  plus this offset. Existing captions are preserved. Generating twice from the same
+                  saved transcript is rejected while its clips remain.
+                </p>
+              </>
+            )}
             <button className="editor-secondary" onClick={saved}>
               Save reviewed transcript
             </button>

@@ -31,3 +31,6 @@ Current milestone: Phase 7 local AI working slice (worker integrations and revie
 Each milestone must yield a verifiable working slice. Update checkboxes only after successful testing.
 
 Schema v3 and local JSON persistence are implemented, with strict v1/v2 validation and migration before reviewed replacement. Timeline editing is real; the Source monitor plays originals and the Timeline monitor plays the shared composition. Native dialogs use substituted responses in automated tests; actual picker interaction, codecs, high-DPI gestures and long-project profiling remain manual checks. Local MP4 rendering is implemented and verified; autosave/crash recovery and packaged Electron loading remain incomplete. See [Timeline](TIMELINE.md).
+
+- [x] Phase 7.4 caption styles/inspector, word timing/regrouping, SRT/VTT exchange and atomic preview positioning on the existing timeline (see CAPTIONS.md for acceptance and limits).
+- [ ] Packaged font/runtime support, physical high-DPI caption gesture validation and measured long-form caption playback profiling.

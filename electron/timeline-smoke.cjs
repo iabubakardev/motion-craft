@@ -231,7 +231,7 @@ app.once("browser-window-created", (_event, window) => {
         await context(left.id);
         assert.ok(
           await evaluate(
-            `(()=>{const m=document.querySelector('[role="menu"]'),r=m.getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&m.scrollWidth<=m.clientWidth+1&&m.querySelectorAll('[role="menuitem"]').length===6;})()`,
+            `(()=>{const m=document.querySelector('[role="menu"]'),r=m.getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight&&m.scrollWidth<=m.clientWidth+1&&m.querySelectorAll('[role="menuitem"]').length===7;})()`,
           ),
         );
         await evaluate(
