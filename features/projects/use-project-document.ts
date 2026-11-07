@@ -4,6 +4,7 @@ import { executeVisualCommand } from "@/core/timeline/visual.cjs";
 import type { commandSchema as motionCommandSchema } from "@/core/animation/commands.cjs";
 import { executeMotionCommand } from "@/core/animation/commands.cjs";
 
+import { assembleVideo } from "@/core/ai/create-video.cjs";
 import { applyPlan } from "@/core/ai/planning.cjs";
 import type { Plan } from "@/core/ai/planning.cjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -474,6 +475,12 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
       }),
     executeTimeline,
     executeMotion,
+    assembleAIVideo: (plan: unknown, transcript: unknown, options: unknown, expected: Project) =>
+      !!mutate((project) => {
+        if (project !== expected)
+          throw new Error("The project changed. Review a new plan before assembling.");
+        return assembleVideo(project, plan, transcript, options);
+      }),
     applyAIPlan: (plan: Plan, expected: Project) =>
       !!mutate((project) => {
         if (project !== expected)

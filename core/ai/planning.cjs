@@ -58,10 +58,7 @@ function preparePlan(rawInput, rawSettings, id) {
       start,
       end,
       narration: transcript
-        ? transcript.segments
-            .filter((s) => s.start < end && s.end > start)
-            .map((s) => s.text)
-            .join(" ")
+        ? narrationText(transcript, start, end)
         : words
             .slice(
               Math.round((start / duration) * words.length),
@@ -88,6 +85,20 @@ function preparePlan(rawInput, rawSettings, id) {
     scenes,
   });
 }
+/** Assign every aligned word (or unaligned segment) exactly once by its canonical start.
+ * @param {import('zod').infer<typeof import('./schema.cjs').transcriptSchema>} transcript
+ * @param {number} start @param {number} end */
+function narrationText(transcript, start, end) {
+  return transcript.segments
+    .flatMap((s) =>
+      s.words?.length
+        ? s.words.filter((w) => w.start >= start && w.start < end).map((w) => w.text)
+        : s.start >= start && s.start < end
+          ? [s.text]
+          : [],
+    )
+    .join(" ");
+}
 const visualSchema = z
   .object({
     scenes: z
@@ -99,6 +110,7 @@ const visualSchema = z
             keywords: z.array(z.string().trim().min(1).max(80)).min(1).max(12),
             assetType: z.enum(["image", "video"]),
             animation: z.enum(["none", "fade-in", "slide-up", "pan", "documentary-zoom"]),
+            transition: z.enum(["cut", "fade-in"]).optional(),
           })
           .strict(),
       )
@@ -167,7 +179,14 @@ function suggestAssets(plan, assets) {
 }
 /** Append only: preserve every existing edit, fill scene-order spacing without moving clips.
  * @param {import('../project/types').Project} project @param {unknown} raw @param {string} timestamp @returns {import('../project/types').Project} */
-function applyPlan(project, raw, timestamp) {
+function applyPlan(
+  project,
+  raw,
+  timestamp,
+  narrationRange = /** @type {import("zod").infer<typeof import("../transcription/schema.cjs").sourceRangeSchema>|undefined} */ (
+    undefined
+  ),
+) {
   const plan = planSchema.parse(raw),
     original = projectSchema.parse(project);
   z.iso.datetime().parse(timestamp);
@@ -276,7 +295,7 @@ function applyPlan(project, raw, timestamp) {
     if (
       !source ||
       source.type !== "audio" ||
-      (source.duration && source.duration + 1e-6 < plan.duration)
+      (source.duration && source.duration + 1e-6 < (narrationRange?.sourceEnd ?? plan.duration))
     )
       throw new Error("Relink the original narration and verify its duration before applying.");
     tracks = tracks.map((t) =>
@@ -291,8 +310,9 @@ function applyPlan(project, raw, timestamp) {
                 trackId: a1.id,
                 start: offset,
                 duration: plan.duration,
-                sourceStart: 0,
-                sourceEnd: plan.duration,
+                sourceStart: narrationRange?.sourceStart ?? 0,
+                sourceEnd: narrationRange?.sourceEnd ?? plan.duration,
+                ...(narrationRange ? { playbackRate: narrationRange.rate } : {}),
               },
             ],
           }
@@ -311,7 +331,9 @@ function applyPlan(project, raw, timestamp) {
     const layer = next.scenes.flatMap((s) => s.layers).find((l) => l.id === clip?.layerId);
     if (!clip || !layer) continue;
     const total = clipFrames(clip, next.fps),
-      durationFrames = Math.min(total, Math.max(2, next.fps));
+      durationFrames = ["pan", "documentary-zoom"].includes(scene.animation)
+        ? total
+        : Math.min(total, Math.max(2, next.fps));
     if (total < 2) continue;
     next = {
       ...next,
@@ -336,6 +358,7 @@ function applyPlan(project, raw, timestamp) {
 }
 module.exports = {
   preparePlan,
+  narrationText,
   visualSchema,
   validateVisuals,
   rankAssets,

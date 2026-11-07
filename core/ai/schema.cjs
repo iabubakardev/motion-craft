@@ -76,6 +76,7 @@ const sceneSchema = z
     keywords: z.array(z.string().trim().min(1).max(80)).min(1).max(12),
     assetType: z.enum(["image", "video"]),
     assetId: idSchema.nullable(),
+    transition: z.enum(["cut", "fade-in"]).optional(),
     animation: z.union([z.literal("none"), presetSchema]),
   })
   .strict();

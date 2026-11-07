@@ -34,3 +34,5 @@ Caption playback can follow short spoken phrases or the current word, and templa
 Phase 7.5 source selection, detachment, grouping and multi-format export are documented in [Audio and transcripts](AUDIO_TRANSCRIPTS.md). Clip selection now takes priority over library selection and the fallback picker.
 
 Phase 7.6 audio editing implementation is available with native audio acceptance. See [Audio editing](AUDIO_EDITING.md) for user controls, exact mix composition, analysis/effect limitations and verification.
+
+Phase 8.0 adds a reviewed narration-to-video POC through **AI Create Video**, reusing local Whisper/Ollama, imported media, timeline/history and the shared preview/export path. Selected narration trim/rate is reused automatically, saved valid transcripts avoid repeat inference, matching is explicitly lexical, unresolved scenes block assembly, and existing timelines require confirmation before one undoable replacement. See AI_VIDEO_READINESS.md for the source-level capability audit and actual MP4 verification. This does not add stock/generation APIs or autonomous visual-semantic editing.

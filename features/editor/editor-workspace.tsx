@@ -3,6 +3,7 @@
 import { resolveTranscriptionSources } from "@/core/transcription/source";
 import type { TranscriptionSource } from "@/core/transcription/source";
 import { TranscriptionSourceChoice } from "@/features/ai/transcription-source-choice";
+import { AICreateVideo } from "@/features/ai/ai-create-video";
 import { AIProduction } from "@/features/ai/ai-production";
 import { TranscriptionPanel } from "@/features/ai/transcription-panel";
 import { secondsToFrames } from "@/core/timeline/time.cjs";
@@ -68,6 +69,9 @@ function Workspace() {
     setMonitor("source");
     doc.selectMedia(id);
   };
+  const [createVideo, setCreateVideo] = useState<{ assetId?: string; clipId?: string } | null>(
+    null,
+  );
   const [aiOpen, setAIOpen] = useState(false);
   const [transcriptionOpen, setTranscriptionOpen] = useState(false);
   const [captionSource, setCaptionSource] = useState<{ assetId: string; clipId?: string } | null>(
@@ -110,6 +114,7 @@ function Workspace() {
         : !!selected && selected.type !== "image" && selected.status !== "error",
     settingsOpen:
       transcriptionOpen ||
+      !!createVideo ||
       aiOpen ||
       state.settingsOpen ||
       exportOpen ||
@@ -159,6 +164,23 @@ function Workspace() {
             </button>
             <button
               className="editor-secondary !px-2"
+              aria-label="AI Create Video"
+              disabled={!doc.ready || doc.busy}
+              onClick={() => {
+                const sources = resolveTranscriptionSources(
+                  doc.project,
+                  timeline.getState().selectedIds,
+                  library.selectedId,
+                ).filter((s) =>
+                  doc.project.assets.some((a) => a.id === s.assetId && a.type === "audio"),
+                );
+                setCreateVideo(sources.length === 1 ? sources[0] : {});
+              }}
+            >
+              AI Create Video
+            </button>
+            <button
+              className="editor-secondary !px-2"
               disabled={!doc.ready || doc.busy}
               onClick={() => setAIOpen(true)}
               aria-label="AI Production"
@@ -179,6 +201,27 @@ function Workspace() {
         onSettings={() => dispatch({ type: "settings", open: true })}
         onResetLayout={() => dispatch({ type: "panels", panels: { ...DEFAULT_PANELS } })}
       />
+      {createVideo && (
+        <AICreateVideo
+          key={`${doc.project.id}:${doc.documentGeneration}`}
+          project={doc.project}
+          assets={doc.project.assets.filter((a) =>
+            library.assets.some((item) => item.id === a.id && item.status !== "error"),
+          )}
+          initialAssetId={createVideo.assetId}
+          clipId={createVideo.clipId}
+          onClose={() => setCreateVideo(null)}
+          onApply={(plan, transcript, options, expected) => {
+            const result = doc.assembleAIVideo(plan, transcript, options, expected);
+            if (result) {
+              setMonitor("timeline");
+              timeline.getState().setPlayhead(0);
+              timeline.getState().setSelection([]);
+            }
+            return result;
+          }}
+        />
+      )}
       {aiOpen && (
         <AIProduction
           key={`${doc.project.id}:${doc.documentGeneration}`}
@@ -420,6 +463,7 @@ function Workspace() {
           activeSceneId={doc.activeSceneId}
           documentGeneration={doc.documentGeneration}
           busy={
+            !!createVideo ||
             aiOpen ||
             transcriptionOpen ||
             doc.busy ||

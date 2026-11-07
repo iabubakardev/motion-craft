@@ -1,6 +1,6 @@
 # MotionCraft roadmap
 
-Current milestone: Phase 7 local AI working slice (worker integrations and reviewed plan-to-timeline flow). Phase 7.1 real Ollama 0.40.14 / qwen3:8b script planning is verified; Phase 7.3 Part B external tiny/CPU/int8 transcription is verified. Phase 6 transitions/caption effects remain pending. Follow ENGINEERING_STANDARDS.md before future work. Production desktop packaging/security and representative media validation are recommended next.
+Current milestone: Phase 8.0 reviewed narration-to-video proof of concept, with actual local-model 1080p export verification (see AI_VIDEO_READINESS.md). Phase 7.1 real Ollama 0.40.14 / qwen3:8b script planning is verified; Phase 7.3 Part B external tiny/CPU/int8 transcription is verified. Phase 6 transitions/caption effects remain pending. Follow ENGINEERING_STANDARDS.md before future work. Production desktop packaging/security and representative media validation are recommended next.
 
 - [x] Next.js application created and running (user confirmed)
 - [x] Electron dev window and secure preload IPC verified (automated desktop smoke test)
@@ -39,3 +39,11 @@ Schema v3 and local JSON persistence are implemented, with strict v1/v2 validati
 - [ ] Long-form waveform/transcription profiling, multilingual/codec acceptance and packaged offline AI/runtime distribution.
 
 - [x] Phase 7.6 implementation: source waveforms, dB gain/solo/pan, fade handles/curves, volume automation, editable ducking, loudness measurement/gain normalization, basic audio effects and standalone audio crossfades are connected. Core/worker checks and the native waveform/mixing/MP4 acceptance suite pass. See [Audio editing](AUDIO_EDITING.md).
+
+## Phase 8.0 AI video creation POC
+
+- [x] Source-level capability audit: [AI_VIDEO_READINESS.md](AI_VIDEO_READINESS.md).
+- [x] Selected narration or imported audio to local Whisper/reused canonical transcript and Qwen scene plan.
+- [x] Reviewed imported-media matching, complete visual coverage gate, six caption styles and confirmed atomic timeline assembly.
+- [x] Actual real-model eight-second landscape 1080p MP4, metadata/decoded-frame/audio checks, native project save/reload and transcript reuse.
+- [ ] Representative meaningful-footage review, true cross-scene dissolves, native portrait export, long-form profiling and packaged/offline release gates.

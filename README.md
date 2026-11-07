@@ -171,3 +171,9 @@ Phase 7.4 adds six editable caption presets, word-level frame animation, subtitl
 Audio detachment, selected-clip transcription, grouping and multi-format transcript export: see [workflow and limitations](docs/AUDIO_TRANSCRIPTS.md). Run `npm run test:audio-transcripts` for the real local speech-video acceptance test.
 
 Audio editing: [controls, processing and verification](docs/AUDIO_EDITING.md). Run `npm run test:audio` for the prepared native mixing acceptance suite to verify the native audio mixing workflow.
+
+## AI video creation proof of concept (Phase 8.0)
+
+Select one narration audio clip or imported audio asset and click **AI Create Video**. Choose a 16:9/9:16 canvas, caption preset and scene target; generate locally with cached Whisper plus Ollama `qwen3:8b`, review every imported-media match and approve assembly. Existing timelines require explicit replacement confirmation; Undo restores the previous edit. Preview and export use the existing timeline and MP4 pipeline. No paid service is used.
+
+See [capability audit, workflow, verification and remaining blockers](docs/AI_VIDEO_READINESS.md). With the development server and local models available, `npm run test:ai:create-video` runs isolated real-model desktop acceptance and actually renders/decodes a 1080p MP4 using an explicitly approved test visual.
