@@ -11,8 +11,8 @@ function createAIJobs(launch = launchWorker) {
   /** @type {{owner:number,job:Job}|null} */ let latest = null;
   /** @param {number} owner */
   const status = (owner) => (latest?.owner === owner ? jobSchema.parse(latest.job) : null);
-  /** @param {number} owner @param {unknown} raw @param {unknown} binding @param {unknown} [assetContext] */
-  function start(owner, raw, binding, assetContext = null) {
+  /** @param {number} owner @param {unknown} raw @param {unknown} binding @param {unknown} [assetContext] @param {unknown} [transcriptionConfig] */
+  function start(owner, raw, binding, assetContext = null, transcriptionConfig = null) {
     const request = requestSchema.parse(raw);
     if (active) throw new Error("Another AI task is in progress.");
     const child = launch(path.join(__dirname, "../workers/ai.cjs"));
@@ -72,11 +72,13 @@ function createAIJobs(launch = launchWorker) {
         const expected =
           request.kind === "detect"
             ? "runtime"
-            : request.kind === "transcribe"
-              ? "transcript"
-              : request.kind === "assets"
-                ? "assets"
-                : "plan";
+            : request.kind === "transcription"
+              ? "transcription"
+              : request.kind === "transcribe"
+                ? "transcript"
+                : request.kind === "assets"
+                  ? "assets"
+                  : "plan";
         if (event.result.kind !== expected) {
           finish("failed", "AI worker returned the wrong result type.", "invalid-output");
           return;
@@ -93,9 +95,12 @@ function createAIJobs(launch = launchWorker) {
         if (context.job.state === "cancelling") finish("cancelled", "Local AI cancelled");
         else finish("failed", "Local AI worker exited before completing.", "worker-failed");
     });
-    child.send({ id: context.job.id, request, binding, assetContext }, (error) => {
-      if (error) finish("failed", "Unable to start the AI worker.", "worker-failed");
-    });
+    child.send(
+      { id: context.job.id, request, binding, assetContext, transcriptionConfig },
+      (error) => {
+        if (error) finish("failed", "Unable to start the AI worker.", "worker-failed");
+      },
+    );
     return context.job;
   }
   /** @param {number} owner @param {string} id */

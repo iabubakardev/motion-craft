@@ -1,3 +1,7 @@
+# Current transcription integration
+
+For external faster-whisper transcription use **Transcribe**, documented in [Phase 7.3 Part B](TRANSCRIPTION.md). It is verified with the separate worker repository and cached tiny/CPU/int8. The older AI wizard transcription setup below is retained as historical compatibility guidance; it is separate from the new native-selected external worker settings.
+
 # Local AI production working slice
 
 Phase 7 is **not fully accepted**. Phase 7.1 script planning is verified with real Ollama 0.40.14 and `qwen3:8b`, including the Electron UI/IPC path, editable review, validated JSON and cancellation. Python 3.11 is installed, but faster-whisper and its model files are absent. No model or Python package was installed or downloaded during this change.

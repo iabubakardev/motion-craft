@@ -75,3 +75,14 @@ Add dated entries when making or changing significant technical decisions.
 - Add a separate version-1 planning sidecar with the requested field names, retaining the existing review/apply JSON format. Trusted frame boundaries use existing FPS conversion; source timestamps remain unchanged.
 - Reuse native forms, Zod, existing state and Node/Electron tests. React Hook Form/TanStack Query provide no demonstrated benefit for this scoped extension; no dependency was added.
 - Real Ollama 0.40.14/qwen3:8b generation and Electron preview/edit/cancel/no-document-change checks pass. This does not establish broad factual quality, long-input performance or transcription acceptance.
+
+## Phase 7.3 Part B decisions (2026-11-06)
+
+- Follow the actual external protocol v1 (`motion-craft-ai/docs/worker-protocol.md`); do not copy Python code or modify the AI repository. Launch a fixed module in the native-selected package cwd, with shell disabled and bytecode writes disabled.
+- Reuse AI start/status/cancel, owner validation, process-tree cancellation, timeouts and export exclusion. Add narrowly scoped native configuration capabilities; renderer requests cannot supply executable paths or shell arguments.
+- Advance project persistence to v4 for version-1 transcript records, original/reviewed segments, source association, model execution metadata and caption references. Validate old formats before reviewed migration; keep IDs/seconds/animations unchanged.
+- Generate ordinary caption layers on a dedicated top track; split at scene ownership boundaries and append only needed tail coverage. Preserve existing captions and make generation atomic with history. Place source media separately with explicit caption frame offset. No parallel renderer/timeline or automatic replacement is added.
+- Allow safe merging onto the current document after harmless media metadata enrichment, while guarding document identity/FPS and source metadata. Native file identity is verified around inference.
+- Keep native forms, Zod, existing hooks and the Node/Electron runners. No dependencies are added. Real tiny/CPU/int8 and Electron review/preview/history/persistence/cancellation pass; GPU, packaging and broad codec/performance gates remain open.
+
+- Development transcription detects the user-managed `tools/motion-craft-ai` checkout when saved settings/files are missing; valid settings retain priority. Discovery stays in Electron and exposes no renderer path-setting capability. Packaged builds retain native manual setup. See TRANSCRIPTION.md.

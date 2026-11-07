@@ -296,3 +296,18 @@ test("structured sidecar retains trusted IDs, source and model with normalized f
     false,
   );
 });
+
+test("external transcription converts to stable planning timestamps without mutating review", () => {
+  const { fixture } = require("../transcription/fixture.cjs");
+  const { toPlanningTranscript } = require("./transcription.cjs");
+  const { transcript } = fixture();
+  const before = structuredClone(transcript);
+  const converted = toPlanningTranscript(transcript);
+  assert.deepEqual(converted, toPlanningTranscript(transcript));
+  assert.equal(converted.sourceAssetId, transcript.assetId);
+  assert.equal(converted.segments[0].start, transcript.result.segments[0].start);
+  assert.equal(converted.text, "Hello world");
+  assert.deepEqual(transcript, before);
+  transcript.result.segments = [];
+  assert.throws(() => toPlanningTranscript(transcript));
+});

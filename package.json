@@ -14,7 +14,7 @@
     "format:check": "prettier --check",
     "check": "npm run lint && npm run typecheck && npm test",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --test core/ai/ai.test.cjs electron/ai-jobs.test.cjs electron/ipc/ai.test.cjs workers/ai.test.cjs core/animation/animation.test.cjs core/project/project.test.cjs electron/security.test.cjs electron/media-library.test.cjs electron/project-store.test.cjs electron/ipc/media.test.cjs electron/ipc/projects.test.cjs features/media/library.test.cjs features/editor/editor-state.test.cjs core/timeline/timeline.test.cjs rendering/composition.test.cjs electron/render-security.test.cjs electron/render-jobs.test.cjs",
+    "test": "node --test core/transcription/transcription.test.cjs workers/transcription.test.cjs electron/transcription-settings.test.cjs core/ai/ai.test.cjs electron/ai-jobs.test.cjs electron/ipc/ai.test.cjs workers/ai.test.cjs core/animation/animation.test.cjs core/project/project.test.cjs electron/security.test.cjs electron/media-library.test.cjs electron/project-store.test.cjs electron/ipc/media.test.cjs electron/ipc/projects.test.cjs features/media/library.test.cjs features/editor/editor-state.test.cjs core/timeline/timeline.test.cjs rendering/composition.test.cjs electron/render-security.test.cjs electron/render-jobs.test.cjs",
     "test:ai:models": "node workers/check-ai.cjs",
     "test:ai:planning": "electron electron/ai-planning-smoke.cjs",
     "test:ai": "electron electron/ai-smoke.cjs",
@@ -24,7 +24,8 @@
     "test:timeline": "electron electron/timeline-smoke.cjs",
     "test:animation": "electron electron/animation-smoke.cjs",
     "test:render": "electron electron/render-smoke.cjs",
-    "render:setup": "node workers/prepare-renderer.cjs"
+    "render:setup": "node workers/prepare-renderer.cjs",
+    "test:transcription": "electron electron/transcription-smoke.cjs"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.540",

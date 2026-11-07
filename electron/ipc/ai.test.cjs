@@ -24,7 +24,11 @@ function setup() {
     },
   };
   const electron = {
-    app: { once: () => {} },
+    app: {
+      isPackaged: true,
+      once: () => {},
+      getPath: () => path.join(__dirname, "../../.next/ai-ipc-config-test"),
+    },
     BrowserWindow: { fromWebContents: (sender) => (sender === contents ? window : null) },
     ipcMain: { handle: (name, fn) => handlers.set(name, fn) },
   };
@@ -32,6 +36,7 @@ function setup() {
     localRequire = createRequire(filename),
     testModule = { exports: {} };
   vm.runInNewContext(fs.readFileSync(filename, "utf8"), {
+    __dirname: path.dirname(filename),
     require: (name) =>
       name === "electron"
         ? electron
@@ -100,4 +105,35 @@ test("main-frame navigation and renderer destruction release owned jobs", () => 
   assert.equal(c.released, 1);
   c.contents.emit("destroyed");
   assert.equal(c.released, 2);
+});
+
+test("transcription settings IPC validates trusted senders and exact operation tuples", async () => {
+  const c = setup();
+  const read = c.handlers.get("ai:transcription-settings");
+  assert.equal(read(c.event).available, false);
+  assert.throws(() => read(c.event, "extra"));
+  const configure = c.handlers.get("ai:configure-transcription");
+  await assert.rejects(
+    configure(
+      c.event,
+      { model: "tiny", device: "cpu", computeType: "int8", pythonPath: "unapproved" },
+      false,
+    ),
+  );
+  await assert.rejects(
+    configure(
+      { ...c.event, senderFrame: { url: c.frame.url } },
+      { model: "tiny", device: "cpu", computeType: "int8" },
+      false,
+    ),
+  );
+  assert.throws(() =>
+    c.handlers.get("ai:start")(c.event, {
+      kind: "transcription",
+      assetId: "../path",
+      model: "tiny",
+      device: "cpu",
+      computeType: "int8",
+    }),
+  );
 });

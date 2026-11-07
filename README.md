@@ -104,7 +104,7 @@ Imports reference originals without copying them. Duplicate paths retain asset I
 
 ## Saving and importing projects
 
-Use Save project / Save as to write `.motioncraft.json` through Electron native dialogs. Open project validates a file and shows a summary before replacement. Import JSON accepts pasted or uploaded schema v1/v2/v3 JSON (v1/v2 are validated and migrated for review) and also requires replacement confirmation; Export JSON downloads the validated, path-free document. Ctrl+S saves and Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y undo/redo outside text inputs. Ctrl+O continues to import media.
+Use Save project / Save as to write `.motioncraft.json` through Electron native dialogs. Open project validates a file and shows a summary before replacement. Import JSON accepts pasted or uploaded schema v1/v2/v3/v4 JSON (v1/v2/v3 are validated and migrated for review) and also requires replacement confirmation; Export JSON downloads the validated, path-free document. Ctrl+S saves and Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y undo/redo outside text inputs. Ctrl+O continues to import media.
 
 Unsaved edits are tracked. New/open/import replacement explicitly warns before discarding them; closing or reloading a dirty desktop document asks whether to keep editing or discard. There is no autosave or crash recovery. Always save before exiting. A reload starts a new unsaved document and clears the previous save target.
 
@@ -146,7 +146,7 @@ npm run test:render
 
 Workspace stabilization adds compact icon controls, a fitted artboard, a focus-canvas mode, automatic timeline fit/follow and a dedicated transport. See [Workspace usability review](docs/WORKSPACE_REVIEW.md) for the research, fixes, verification and remaining UI priorities.
 
-Animation keyframes and presets are available in the inspector and timeline. Projects now save as schema v3; v1/v2 imports migrate with review. See [Animation controls and Phase 6 acceptance](docs/ANIMATION.md), import the [media-free animation sample](public/animation-sample.motioncraft.json), and run `npm run test:animation` for the Player/MP4 regression. Transitions and dedicated caption effects remain incomplete.
+Animation keyframes and presets are available in the inspector and timeline. Projects now save as schema v4; v1/v2/v3 imports migrate with review. See [Animation controls and Phase 6 acceptance](docs/ANIMATION.md), import the [media-free animation sample](public/animation-sample.motioncraft.json), and run `npm run test:animation` for the Player/MP4 regression. Transitions and dedicated caption effects remain incomplete.
 
 ## Local AI production (Phase 7 working slice)
 
@@ -161,3 +161,7 @@ Install Ollama for Windows from https://ollama.com/download/windows, then run `o
 Default endpoint: `http://127.0.0.1:11434`. Configure `MOTIONCRAFT_OLLAMA_URL` before launching Electron for a different loopback origin; restart Electron after changes. No cloud models, arbitrary renderer URLs or paid APIs are required.
 
 `npm run test:ai:models` verifies available real models. With the dev server running and qwen3:8b installed, `npm run test:ai:planning` verifies real UI/IPC generation, editable review, cancellation and an unchanged project using an isolated test profile. See [Local AI](docs/LOCAL_AI.md) for JSON formats and limitations.
+
+## External transcription (Phase 7.3 Part B)
+
+Use **Transcribe** to configure a native-selected Python interpreter and external `motion_craft_ai/worker.py`, transcribe imported audio/video locally, review/edit/seek segments, and generate ordinary editable captions in one undoable operation. Project v4 persists original/reviewed transcripts, model metadata and caption references; v1?v3 migrate with review. No dependencies were added and no external repository was modified. See [setup, protocol, limitations and real-worker tests](docs/TRANSCRIPTION.md).

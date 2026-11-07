@@ -26,6 +26,9 @@ const workerRequestSchema = z
     request: requestSchema,
     binding: bindingSchema.nullable(),
     assetContext: assetContextSchema.nullable().optional(),
+    transcriptionConfig: require("../core/transcription/schema.cjs")
+      .configSchema.nullable()
+      .optional(),
   })
   .strict();
 const pythonEvent = z.discriminatedUnion("type", [
@@ -150,7 +153,65 @@ function python(request) {
 }
 /** @param {unknown} raw */
 async function run(raw) {
-  const { id, request, binding, assetContext } = workerRequestSchema.parse(raw);
+  const { id, request, binding, assetContext, transcriptionConfig } =
+    workerRequestSchema.parse(raw);
+  if (request.kind === "transcription") {
+    if (!binding || binding.id !== request.assetId || !transcriptionConfig)
+      throw new Error(
+        "Configure the external worker and import/relink the source before transcription.",
+      );
+    const verify = async () => {
+      const real = await fs.realpath(binding.originalPath),
+        stat = await fs.stat(real);
+      if (
+        real !== binding.originalPath ||
+        !stat.isFile() ||
+        stat.size !== binding.size ||
+        stat.mtimeMs !== binding.modifiedAt ||
+        stat.ino !== binding.ino
+      )
+        throw new Error("Source changed. Relink it before transcription.");
+    };
+    await verify();
+    const result = require("../core/transcription/schema.cjs").resultSchema.parse(
+      await require("./transcription.cjs").transcribe(
+        transcriptionConfig,
+        {
+          protocolVersion: 1,
+          jobId: id,
+          action: "transcribe",
+          audioPath: binding.originalPath,
+          model: request.model,
+          device: request.device,
+          computeType: request.computeType,
+          options: { beamSize: 1, wordTimestamps: true, vadFilter: true, language: null },
+        },
+        (stage) => progress(stage),
+        (child) => {
+          ownedPython = child;
+        },
+      ),
+    );
+    await verify();
+    const { audioPath, ...safeResult } = result;
+    void audioPath;
+    return {
+      kind: "transcription",
+      transcript: {
+        version: 1,
+        id,
+        assetId: request.assetId,
+        source: {
+          filename: path.basename(binding.originalPath),
+          size: binding.size,
+          modifiedAt: binding.modifiedAt,
+        },
+        result: safeResult,
+        originalSegments: result.segments,
+        captionIds: [],
+      },
+    };
+  }
   send({ type: "progress", state: "preparing", stage: "Preparing local AI", progress: null });
   if (request.kind === "assets") return runAssets(request.operation, assetContext, progress);
   if (request.kind === "detect") {

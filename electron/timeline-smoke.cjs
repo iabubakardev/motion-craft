@@ -334,6 +334,7 @@ app.once("browser-window-created", (_event, window) => {
       const legacy = structuredClone(saved);
       legacy.schemaVersion = 1;
       delete legacy.animations;
+      delete legacy.transcripts;
       legacy.tracks = legacy.tracks.map((track) => ({
         id: track.id,
         name: track.name,
@@ -356,15 +357,15 @@ app.once("browser-window-created", (_event, window) => {
       await waitFor(
         `document.querySelector('[data-testid="save-indicator"]').textContent==='Unsaved changes'`,
       );
-      assert.equal((await exported()).schemaVersion, 3);
+      assert.equal((await exported()).schemaVersion, 4);
       assert.equal(JSON.parse(await fs.readFile(legacyPath, "utf8")).schemaVersion, 1);
       await click("Save project");
       await waitFor(
         `document.querySelector('[data-testid="save-indicator"]').textContent==='Saved'`,
       );
-      assert.equal(JSON.parse(await fs.readFile(legacyPath, "utf8")).schemaVersion, 3);
+      assert.equal(JSON.parse(await fs.readFile(legacyPath, "utf8")).schemaVersion, 4);
       console.log(
-        "PASS: native v1 migration is reviewed, marks the document dirty and writes v3 only on save",
+        "PASS: native v1 migration is reviewed, marks the document dirty and writes v4 only on save",
       );
       assert.deepEqual(errors, []);
       const capture = await window.webContents.capturePage();

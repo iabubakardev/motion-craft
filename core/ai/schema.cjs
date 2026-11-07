@@ -149,6 +149,15 @@ const ollamaModelName = z
   .max(120)
   .regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]*$/);
 const requestSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("transcription"),
+      assetId: idSchema,
+      model: require("../transcription/schema.cjs").modelSchema,
+      device: require("../transcription/schema.cjs").deviceSchema,
+      computeType: require("../transcription/schema.cjs").computeSchema,
+    })
+    .strict(),
   z.object({ kind: z.literal("assets"), operation: assetIndex.operationSchema }).strict(),
   z.object({ kind: z.literal("detect") }).strict(),
   z
@@ -193,6 +202,12 @@ const runtimeSchema = z
   })
   .strict();
 const resultSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("transcription"),
+      transcript: require("../transcription/schema.cjs").transcriptSchema,
+    })
+    .strict(),
   assetIndex.resultSchema,
   z.object({ kind: z.literal("runtime"), runtime: runtimeSchema }).strict(),
   z.object({ kind: z.literal("transcript"), transcript: transcriptSchema }).strict(),

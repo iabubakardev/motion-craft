@@ -5,7 +5,8 @@ const uuid = () => globalThis.crypto.randomUUID();
 function createProject(options = {}) {
   const now = options.now || new Date().toISOString();
   return projectSchema.parse({
-    schemaVersion: 3,
+    schemaVersion: 4,
+    transcripts: [],
     animations: {},
     id: options.id || uuid(),
     name: "Untitled project",
@@ -73,6 +74,10 @@ function rebuildProject(project, timestamp = new Date().toISOString()) {
   );
   return projectSchema.parse({
     ...project,
+    transcripts: project.transcripts.map((transcript) => ({
+      ...transcript,
+      captionIds: transcript.captionIds.filter((id) => clipIds.has(id)),
+    })),
     animations,
     scenes,
     tracks,

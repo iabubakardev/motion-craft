@@ -1,6 +1,6 @@
 const { z } = require("zod");
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const { motionSchema } = require("../animation/schema.cjs");
 const { stableId } = require("../animation/engine.cjs");
 const MAX_JSON_BYTES = 5 * 1024 * 1024;
@@ -250,9 +250,9 @@ const projectV2Schema = z
   .strict()
   .superRefine((project, ctx) => validateProjectRelations(project, ctx, 2));
 
-const projectSchema = projectV2Schema
+const projectV3Schema = projectV2Schema
   .safeExtend({
-    schemaVersion: z.literal(SCHEMA_VERSION),
+    schemaVersion: z.literal(3),
     animations: z.record(idSchema, motionSchema),
   })
   .superRefine((project, ctx) => {
@@ -285,7 +285,45 @@ const projectSchema = projectV2Schema
         issue("Preset exceeds clip duration");
     }
   });
-/** @param {import("zod").infer<typeof projectV2Schema>} project @returns {import("./types").Project} */
+const projectSchema = projectV3Schema
+  .safeExtend({
+    schemaVersion: z.literal(4),
+    transcripts: z.array(require("../transcription/schema.cjs").transcriptSchema).max(100),
+  })
+  .superRefine((project, ctx) => {
+    const transcriptIds = new Set();
+    const captionLayers = new Set(
+      project.scenes.flatMap((scene) =>
+        scene.layers.filter((layer) => layer.type === "caption").map((layer) => layer.id),
+      ),
+    );
+    const captionClips = new Set(
+      project.tracks.flatMap((track) =>
+        track.clips
+          .filter((clip) => clip.layerId && captionLayers.has(clip.layerId))
+          .map((clip) => clip.id),
+      ),
+    );
+    for (const transcript of project.transcripts || []) {
+      if (
+        transcriptIds.has(transcript.id) ||
+        !project.assets.some((a) => a.id === transcript.assetId && a.type !== "image")
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["transcripts"],
+          message: "Transcripts must have unique IDs and reference audio/video assets",
+        });
+      transcriptIds.add(transcript.id);
+      if (transcript.captionIds.some((id) => !captionClips.has(id)))
+        ctx.addIssue({
+          code: "custom",
+          path: ["transcripts"],
+          message: "Caption references must identify existing caption clips",
+        });
+    }
+  });
+/** @param {import("zod").infer<typeof projectV2Schema>} project @returns {import("zod").infer<typeof projectV3Schema>} */
 function migrateV2(project) {
   const animations = {};
   for (const scene of project.scenes)
@@ -494,14 +532,15 @@ function validateProject(value) {
     value &&
     typeof value === "object" &&
     value.schemaVersion !== SCHEMA_VERSION &&
-    value.schemaVersion !== 2
+    value.schemaVersion !== 2 &&
+    value.schemaVersion !== 3
   ) {
     return {
       success: false,
       errors: [
         {
           path: "schemaVersion",
-          message: "Supported schema versions are 1, 2 (migrated with review), and 3.",
+          message: "Supported schema versions are 1, 2, 3 (migrated with review), and 4.",
         },
       ],
     };
@@ -517,6 +556,18 @@ function validateProject(value) {
       };
     value = migrateV2(legacy.data);
     migratedFrom = migratedFrom || 2;
+  }
+  if (value && typeof value === "object" && value.schemaVersion === 3) {
+    const legacy = projectV3Schema.safeParse(value);
+    if (!legacy.success)
+      return {
+        success: false,
+        errors: legacy.error.issues
+          .slice(0, 100)
+          .map((entry) => ({ path: entry.path.join(".") || "project", message: entry.message })),
+      };
+    value = { ...legacy.data, schemaVersion: 4, transcripts: [] };
+    migratedFrom = migratedFrom || 3;
   }
   const result = projectSchema.safeParse(value);
   if (result.success)
@@ -571,6 +622,7 @@ module.exports = {
   projectSchema,
   legacyProjectSchema,
   projectV2Schema,
+  projectV3Schema,
   validateProject,
   parseProjectJSON,
   serializeProject,

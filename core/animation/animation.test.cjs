@@ -115,6 +115,7 @@ test("every preset creates bounded editable keys; convert, clear and manual edit
 test("v1/v2 migrate with review and v3 save/open preserves manual animations and IDs", () => {
   const old = createRenderSample();
   delete old.animations;
+  delete old.transcripts;
   old.schemaVersion = 2;
   old.scenes[0].layers[0].animation = { preset: "fade-in", duration: 0.5 };
   const migrated = validateProject(old);
@@ -152,6 +153,7 @@ test("legacy fade/slide migration preserves all visible samples, including one-f
     for (const frames of [1, 60]) {
       const old = createRenderSample();
       delete old.animations;
+      delete old.transcripts;
       old.schemaVersion = 2;
       const layer = old.scenes[0].layers[0];
       layer.duration = frames / 30;

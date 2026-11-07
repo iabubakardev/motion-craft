@@ -1,19 +1,19 @@
-# Project JSON format and timing (schemaVersion 3; v1/v2 migration supported)
+# Project JSON format and timing (schemaVersion 4; v1/v2/v3 migration supported)
 
 The project document is the source of truth for editing data. React UI state, playback status, native file paths and runtime media URLs are separate. The same strict Zod schemas validate renderer imports and Electron file operations; TypeScript types are inferred from those schemas.
 
 ## Format
 
-See the complete [sample project](../public/sample-project.motioncraft.json). It remains a v1 migration fixture. Its image is intentionally unavailable until relinked; media bytes are never embedded. New exports/save files use v3. See [Animation](ANIMATION.md) for the canonical animation map and migration semantics.
+See the complete [sample project](../public/sample-project.motioncraft.json). It remains a v1 migration fixture. Its image is intentionally unavailable until relinked; media bytes are never embedded. New exports/save files use v4. See [Animation](ANIMATION.md) for the canonical animation map and migration semantics.
 
-| Entity  | Fields                                                                                                                                                                         |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Project | `schemaVersion`, `id`, `name`, `createdAt`, `updatedAt`, `resolution`, `fps`, `aspectRatio`, `duration`, `stylePreset`, `assets`, `scenes`, `tracks`, `settings`, `animations` |
-| Scene   | `id`, `name`, `start`, `duration`, `narration`, `stylePreset`, `layers`, `transitionIn`, `transitionOut`, `metadata`                                                           |
-| Layer   | `id`, `type`, media-only `assetId`, `trackId`, `start`, `duration`, `position`, `scale`, `rotation`, `opacity`, `zIndex`, `animation`, typed `properties`                      |
-| Track   | `id`, `name`, `type`, `order`, `visible`, `muted`, `locked`, `height`, `clips`                                                                                                 |
-| Clip    | `id`, exactly one of `assetId`/`layerId`, `trackId`, `start`, `duration`, `sourceStart`, `sourceEnd`                                                                           |
-| Asset   | `id`, basename `filename`, `type`, `mimeType`, `size`, `importedAt`, optional `duration`, `width`, `height`                                                                    |
+| Entity  | Fields                                                                                                                                                                                        |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project | `schemaVersion`, `id`, `name`, `createdAt`, `updatedAt`, `resolution`, `fps`, `aspectRatio`, `duration`, `stylePreset`, `assets`, `scenes`, `tracks`, `settings`, `animations`, `transcripts` |
+| Scene   | `id`, `name`, `start`, `duration`, `narration`, `stylePreset`, `layers`, `transitionIn`, `transitionOut`, `metadata`                                                                          |
+| Layer   | `id`, `type`, media-only `assetId`, `trackId`, `start`, `duration`, `position`, `scale`, `rotation`, `opacity`, `zIndex`, `animation`, typed `properties`                                     |
+| Track   | `id`, `name`, `type`, `order`, `visible`, `muted`, `locked`, `height`, `clips`                                                                                                                |
+| Clip    | `id`, exactly one of `assetId`/`layerId`, `trackId`, `start`, `duration`, `sourceStart`, `sourceEnd`                                                                                          |
+| Asset   | `id`, basename `filename`, `type`, `mimeType`, `size`, `importedAt`, optional `duration`, `width`, `height`                                                                                   |
 
 IDs are UUIDs. Scene/layer duplication creates new scene and layer IDs while retaining asset references and manual content. Asset/scene/track IDs are unique within their collection; layer IDs are unique across scenes. Derived clip IDs deliberately equal their layer IDs in a separate entity namespace.
 
@@ -45,7 +45,7 @@ Derived clips are serialized for interchange, but cannot disagree with their can
 
 ## Validation and import
 
-Schema versions 1, 2 and 3 are accepted. Versions 1 and 2 first pass their original strict structural and relational validation, then migrate to v3 for explicit review. IDs, exact seconds, source references and manual properties are preserved. Migration adds visible=true, muted=false, locked=false and height=36 to tracks, and changes non-playable clip source endpoints to null. A migrated open/import is dirty until saved as v3. Unknown fields/versions are rejected. Version 3 exports require an application that supports the animation map. Every object is strict, so unsupported fields are reported rather than dropped. Validation checks references, media/track compatibility, unique IDs/orders, durations, source ranges, scene containment and derived timing. Resolution is 64-8192 pixels per axis; FPS supports 24/25/30/50/60; aspect ratios are 16:9, 9:16, 1:1 and 4:3 and must match the resolution. Timing is limited to 24 hours. Project JSON is limited to 5 MB, including exported formatted JSON.
+Schema versions 1, 2, 3 and 4 are accepted. Versions 1, 2 and 3 first pass their original strict structural and relational validation, then migrate to v4 for explicit review. IDs, exact seconds, source references and manual properties are preserved. Migration adds visible=true, muted=false, locked=false and height=36 to tracks, and changes non-playable clip source endpoints to null. A migrated open/import is dirty until saved as v4. Unknown fields/versions are rejected. Version 4 exports require an application that supports persisted transcripts and the animation map. Every object is strict, so unsupported fields are reported rather than dropped. Validation checks references, media/track compatibility, unique IDs/orders, durations, source ranges, scene containment and derived timing. Resolution is 64-8192 pixels per axis; FPS supports 24/25/30/50/60; aspect ratios are 16:9, 9:16, 1:1 and 4:3 and must match the resolution. Timing is limited to 24 hours. Project JSON is limited to 5 MB, including exported formatted JSON.
 
 The UI accepts pasted JSON or an uploaded file, displays path-specific errors, and presents a summary before replacement. Open uses the same validation and review step. Cancel keeps the current project and save destination. Confirmation explicitly warns about unsaved changes and resets history. Browser JSON import/export works without Electron; declared local media is unavailable there.
 
@@ -104,3 +104,7 @@ Next milestone: composition preview driven by this validated scene/layer model, 
 ## Phase 4 timing boundary
 
 Seconds remain the serialized unit in v2. Video/audio source endpoints are numeric and differ by clip duration; image, text, shape and caption source endpoints are both null. Track height is an integer from 28 to 160 pixels. Track order is unique, visibility/mute/lock are required booleans. Clip command inputs are integer project frames; edits have at least one frame. Imported fractional-second placement is preserved until explicitly edited. Moves add an exact frame delta without quantizing legacy durations/source ranges; trim/split edges and inspector start/duration use project frames. See [conversion and ownership rules](TIMELINE.md).
+
+## Schema v4 transcription persistence
+
+V4 adds required `transcripts: []`. Strict v3 validates animation/scene/clip invariants before migration, preserves all existing data and IDs, and initializes the array empty. V1/v2 follow their existing validated migrations first; all migrated documents require review and an explicit v4 save. Each transcript is a separate version-1 record with asset association, safe source fingerprint, original segments, reviewed result/model/execution metadata and caption clip references. Paths and media bytes are excluded. Caption references must resolve to existing caption clips and are pruned on rebuild after deletion. Reviewed text and caption clip text remain independently editable; see [Transcription](TRANSCRIPTION.md).

@@ -1,6 +1,6 @@
 // @ts-check
 const path = require("node:path");
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { z } = require("zod");
 const { validateRequest } = require("../security.cjs");
 const { requestSchema, jobSchema } = require("../../core/ai/schema.cjs");
@@ -8,6 +8,10 @@ const { createAIJobs } = require("../ai-jobs.cjs");
 /** @param {ReturnType<typeof import('../media-library.cjs').createMediaLibrary>} library @param {()=>boolean} [otherBusy] */
 function registerAIIPC(library, otherBusy = () => false) {
   const jobs = createAIJobs();
+  const settings = require("../transcription-settings.cjs").createTranscriptionSettings(
+    app.getPath("userData"),
+    app.isPackaged ? null : path.resolve(__dirname, "../.."),
+  );
   /** @type {Set<number>} */ const observed = new Set();
   /** @param {import('electron').IpcMainInvokeEvent} event */
   function check(event) {
@@ -31,12 +35,14 @@ function registerAIIPC(library, otherBusy = () => false) {
     if (otherBusy()) throw new Error("Wait for the active export before starting local AI.");
     const [request] = z.tuple([requestSchema]).parse(args);
     let binding = null;
-    if (request.kind === "transcribe") {
+    if (request.kind === "transcribe" || request.kind === "transcription") {
       const asset = library.listAssets().find((asset) => asset.id === request.assetId);
       if (
         !asset ||
-        asset.type !== "audio" ||
-        !["audio/mpeg", "audio/wav"].includes(asset.mimeType) ||
+        (request.kind === "transcription"
+          ? !["audio", "video"].includes(asset.type)
+          : asset.type !== "audio") ||
+        (request.kind === "transcribe" && !["audio/mpeg", "audio/wav"].includes(asset.mimeType)) ||
         asset.status === "error"
       )
         throw new Error("Import/relink an MP3 or WAV narration first.");
@@ -55,14 +61,68 @@ function registerAIIPC(library, otherBusy = () => false) {
                 throw new Error("Import/relink the requested image/video before indexing.");
               return asset;
             });
-      const bindings=assets.map(asset=>{
-        const binding=library.captureBindings([asset])[0];
-        if(!binding)throw new Error('Missing media. Relink before indexing.');
-        return {id:binding.id,originalPath:binding.originalPath,size:binding.size,modifiedAt:binding.modifiedAt,ino:binding.ino,asset};
+      const bindings = assets.map((asset) => {
+        const binding = library.captureBindings([asset])[0];
+        if (!binding) throw new Error("Missing media. Relink before indexing.");
+        return {
+          id: binding.id,
+          originalPath: binding.originalPath,
+          size: binding.size,
+          modifiedAt: binding.modifiedAt,
+          ino: binding.ino,
+          asset,
+        };
       });
-      assetContext={directory:path.join(app.getPath('userData'),'asset-index'),bindings};
+      assetContext = { directory: path.join(app.getPath("userData"), "asset-index"), bindings };
     }
-    return jobSchema.parse(jobs.start(event.sender.id, request, binding, assetContext));
+    const config = request.kind === "transcription" ? settings.read().config : null;
+    if (request.kind === "transcription" && !config)
+      throw new Error("Configure the external Python worker in Transcription settings first.");
+    return jobSchema.parse(jobs.start(event.sender.id, request, binding, assetContext, config));
+  });
+  ipcMain.handle("ai:transcription-settings", (event, ...args) => {
+    check(event);
+    z.tuple([]).parse(args);
+    return settings.read();
+  });
+  ipcMain.handle("ai:configure-transcription", async (event, ...args) => {
+    const window = check(event),
+      url = event.sender.getURL();
+    const [preferences, choosePaths] = z
+      .tuple([require("../../core/transcription/schema.cjs").preferencesSchema, z.boolean()])
+      .parse(args);
+    if (jobs.isBusy())
+      throw new Error("Wait for the active AI task before changing worker settings.");
+    let config = settings.read().config;
+    if (choosePaths) {
+      const python = await dialog.showOpenDialog(window, {
+        title: "Choose Python interpreter",
+        defaultPath: config?.pythonPath,
+        properties: ["openFile"],
+        filters: [{ name: "Python", extensions: ["exe"] }],
+      });
+      check(event);
+      if (event.sender.getURL() !== url || window.isDestroyed())
+        throw new Error("Window changed during configuration.");
+      if (python.canceled) return settings.read();
+      const worker = await dialog.showOpenDialog(window, {
+        title: "Choose motion_craft_ai/worker.py",
+        defaultPath: config?.workerPath,
+        properties: ["openFile"],
+        filters: [{ name: "Python worker", extensions: ["py"] }],
+      });
+      check(event);
+      if (event.sender.getURL() !== url || window.isDestroyed())
+        throw new Error("Window changed during configuration.");
+      if (worker.canceled) return settings.read();
+      config = { pythonPath: python.filePaths[0], workerPath: worker.filePaths[0], ...preferences };
+    }
+    if (!config) throw new Error("Select the Python interpreter and worker entrypoint first.");
+    if (jobs.isBusy())
+      throw new Error(
+        "An AI task started while selecting configuration. Try again after it finishes.",
+      );
+    return settings.save({ ...config, ...preferences });
   });
   ipcMain.handle("ai:status", (event, ...args) => {
     check(event);

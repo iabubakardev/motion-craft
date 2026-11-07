@@ -2,6 +2,7 @@ import type { AIJob, AIRequest } from "./ai";
 import type { RenderJob } from "@/platform/render";
 import type { MediaAsset, MediaImportResult, MediaMetadata } from "@/core/media/types";
 import type { z } from "zod";
+import type { settingsSchema, preferencesSchema } from "@/core/transcription/schema.cjs";
 import type { Project, ProjectAsset } from "@/core/project/types";
 import type {
   openResultSchema,
@@ -12,6 +13,11 @@ import type {
 export interface DesktopBridge {
   getAppVersion: () => Promise<string>;
   ai: {
+    transcriptionSettings: () => Promise<z.infer<typeof settingsSchema>>;
+    configureTranscription: (
+      preferences: z.infer<typeof preferencesSchema>,
+      choosePaths: boolean,
+    ) => Promise<z.infer<typeof settingsSchema>>;
     start: (request: AIRequest) => Promise<AIJob>;
     status: () => Promise<AIJob | null>;
     cancel: (id: string) => Promise<AIJob | null>;

@@ -14,6 +14,7 @@ import type { Layer, Project, ProjectHistory, ValidationIssue } from "@/core/pro
 import * as operations from "@/core/project/operations.cjs";
 import { createHistory, commitProject, undoProject, redoProject } from "@/core/project/history.cjs";
 import { fpsSchema, serializeProject } from "@/core/project/schema.cjs";
+import { saveTranscript, generateCaptions } from "@/core/transcription/commands.cjs";
 import {
   activateProject,
   isProjectDesktopAvailable,
@@ -32,7 +33,7 @@ const bootstrap = operations.createProject({
   ),
 });
 export interface ProjectCandidate {
-  migratedFrom?: 1 | 2;
+  migratedFrom?: 1 | 2 | 3;
   project: Project;
   candidateId: string | null;
   filename: string | null;
@@ -339,6 +340,22 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
       : undefined;
   return {
     project,
+    saveTranscript: (transcript: unknown, expected: Project) =>
+      !!mutate((project) => {
+        if (project.id !== expected.id || project.fps !== expected.fps)
+          throw new Error(
+            "The project changed. Reopen transcription review against the current project.",
+          );
+        return saveTranscript(project, transcript);
+      }),
+    generateCaptions: (transcript: unknown, expected: Project, offsetFrames: number) =>
+      !!mutate((project) => {
+        if (project.id !== expected.id || project.fps !== expected.fps)
+          throw new Error(
+            "The project changed. Reopen transcription review against the current project.",
+          );
+        return generateCaptions(project, transcript, offsetFrames);
+      }),
     executeTimeline,
     executeMotion,
     applyAIPlan: (plan: Plan, expected: Project) =>

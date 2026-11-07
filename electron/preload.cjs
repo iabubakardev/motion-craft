@@ -3,6 +3,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("motioncraft", {
   getAppVersion: () => ipcRenderer.invoke("app:getVersion"),
   ai: {
+    transcriptionSettings: () => ipcRenderer.invoke("ai:transcription-settings"),
+    configureTranscription: (preferences, choosePaths) =>
+      ipcRenderer.invoke("ai:configure-transcription", preferences, choosePaths),
     start: (request) => ipcRenderer.invoke("ai:start", request),
     status: () => ipcRenderer.invoke("ai:status"),
     cancel: (id) => ipcRenderer.invoke("ai:cancel", id),

@@ -1,6 +1,7 @@
 "use client";
 
 import { AIProduction } from "@/features/ai/ai-production";
+import { TranscriptionPanel } from "@/features/ai/transcription-panel";
 import { secondsToFrames } from "@/core/timeline/time.cjs";
 import { EditorIcon } from "./editor-icon";
 import {
@@ -63,6 +64,7 @@ function Workspace() {
     doc.selectMedia(id);
   };
   const [aiOpen, setAIOpen] = useState(false);
+  const [transcriptionOpen, setTranscriptionOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const previewRef = useRef<PreviewMonitorHandle>(null);
   const { clearSelection } = doc;
@@ -77,6 +79,7 @@ function Workspace() {
         ? doc.project.duration > 0
         : !!selected && selected.type !== "image" && selected.status !== "error",
     settingsOpen:
+      transcriptionOpen ||
       aiOpen ||
       state.settingsOpen ||
       exportOpen ||
@@ -118,6 +121,14 @@ function Workspace() {
             <ProjectActions document={doc} />
             <button
               className="editor-secondary !px-2"
+              aria-label="Transcribe"
+              disabled={!doc.ready || doc.busy}
+              onClick={() => setTranscriptionOpen(true)}
+            >
+              Transcribe
+            </button>
+            <button
+              className="editor-secondary !px-2"
               disabled={!doc.ready || doc.busy}
               onClick={() => setAIOpen(true)}
               aria-label="AI Production"
@@ -153,6 +164,25 @@ function Workspace() {
               timeline
                 .getState()
                 .setPlayhead(secondsToFrames(expected.duration, expected.fps, "ceil"));
+            }
+            return applied;
+          }}
+        />
+      )}
+      {transcriptionOpen && (
+        <TranscriptionPanel
+          key={`${doc.project.id}:${doc.documentGeneration}`}
+          project={doc.project}
+          assets={library.assets}
+          onImport={library.importMedia}
+          importing={library.importing}
+          onClose={() => setTranscriptionOpen(false)}
+          onSave={doc.saveTranscript}
+          onCaptions={(transcript, expected, offset) => {
+            const applied = doc.generateCaptions(transcript, expected, offset);
+            if (applied) {
+              setMonitor("timeline");
+              timeline.getState().setPlayhead(offset);
             }
             return applied;
           }}

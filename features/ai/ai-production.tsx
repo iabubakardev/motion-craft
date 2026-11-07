@@ -7,6 +7,9 @@ import type { runtimeSchema } from "@/core/ai/schema.cjs";
 import { rankAssets, suggestAssets } from "@/core/ai/planning.cjs";
 import { toScenePlan } from "@/core/ai/scene-plan.cjs";
 import { secondsToFrames } from "@/core/timeline/time.cjs";
+import { transcriptionSettings } from "@/platform/transcription";
+import { modelSchema } from "@/core/transcription/schema.cjs";
+import { toPlanningTranscript } from "@/core/ai/transcription.cjs";
 import { isAIAvailable } from "@/platform/ai";
 import { AssetSearch } from "@/features/media/asset-search";
 import { StylePackPicker } from "./style-pack-picker";
@@ -38,6 +41,9 @@ export function AIProduction({
   const [matchSceneId, setMatchSceneId] = useState<string | null>(null);
   const [baseline, setBaseline] = useState(project);
   const { job, error, running, start, cancel } = useAIJob();
+  const [workerSettings, setWorkerSettings] = useState<Awaited<
+    ReturnType<typeof transcriptionSettings>
+  > | null>(null);
   const [runtime, setRuntime] = useState<z.infer<typeof runtimeSchema> | null>(null),
     [model, setModel] = useState(""),
     [whisperModel, setWhisperModel] = useState(""),
@@ -50,6 +56,24 @@ export function AIProduction({
     [message, setMessage] = useState(""),
     [confirmed, setConfirmed] = useState(false),
     [inputKind, setInputKind] = useState<"script" | "narration">("script");
+  useEffect(() => {
+    let obsolete = false;
+    void transcriptionSettings()
+      .then((value) => {
+        if (obsolete) return;
+        setWorkerSettings(value);
+        if (value.available && value.config) setWhisperModel(value.config.model);
+      })
+      .catch(() => {
+        if (!obsolete)
+          setMessage(
+            "Could not read transcription settings. Reopen Transcribe to configure the worker.",
+          );
+      });
+    return () => {
+      obsolete = true;
+    };
+  }, []);
   useEffect(() => {
     const current = dialog.current;
     current?.showModal();
@@ -72,11 +96,22 @@ export function AIProduction({
             ? current
             : result.runtime.ollama.models[0] || "",
         );
-        setWhisperModel((current) =>
-          result.runtime.whisper.models.includes(current)
-            ? current
-            : result.runtime.whisper.models[0] || "",
-        );
+        if (!workerSettings?.available)
+          setWhisperModel((current) =>
+            result.runtime.whisper.models.includes(current)
+              ? current
+              : result.runtime.whisper.models[0] || "",
+          );
+      } else if (result.kind === "transcription") {
+        try {
+          setTranscript(toPlanningTranscript(result.transcript));
+          setPlan(null);
+          setConfirmed(false);
+        } catch {
+          setMessage(
+            "No usable speech transcript was returned for scene planning. Use Transcribe to review the result.",
+          );
+        }
       } else if (result.kind === "transcript") {
         setTranscript(result.transcript);
         setPlan(null);
@@ -100,7 +135,7 @@ export function AIProduction({
         setConfirmed(false);
       }
     });
-  }, [job, availableAssets, stylePack]);
+  }, [job, availableAssets, stylePack, workerSettings]);
   const download = (value: unknown, name: string) => {
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(value, null, 2) + "\n"], { type: "application/json" }),
@@ -145,6 +180,21 @@ export function AIProduction({
     );
     setConfirmed(false);
   };
+  const transcriptionIssues = [
+    !isAIAvailable()
+      ? "Open the current Electron desktop app to transcribe. Restart Electron if the AI bridge is missing."
+      : "",
+    running ? "Wait for the active AI task to finish or cancel it." : "",
+    !assetId
+      ? "Choose an imported MP3/WAV in Narration asset. Import audio from the media library first if the list is empty."
+      : "",
+    !whisperModel
+      ? "No transcription model selected. Configure Python and the external worker in Transcribe, then reopen AI Production. For the legacy worker, install faster-whisper in MOTIONCRAFT_PYTHON and set MOTIONCRAFT_WHISPER_MODELS to a folder containing local model directories, then restart Electron and detect local AI."
+      : "",
+    transcript
+      ? "A transcript draft already exists. Discard the transcript draft and plan to transcribe again."
+      : "",
+  ].filter(Boolean);
   const matchScene = plan?.scenes.find((scene) => scene.id === matchSceneId);
   const unavailable =
     !!plan &&
@@ -215,7 +265,9 @@ export function AIProduction({
                 {runtime.ollama.message}
               </p>
               <p>
-                {runtime.whisper.message} {runtime.whisper.models.length} transcription models.
+                {workerSettings?.available
+                  ? "External transcription worker configured. Models must already be cached; availability is checked at start."
+                  : runtime.whisper.message}
               </p>
             </>
           )}
@@ -248,8 +300,17 @@ export function AIProduction({
                 disabled={running}
                 onChange={(e) => setWhisperModel(e.target.value)}
               >
-                <option value="">Select local model</option>
-                {runtime?.whisper.models.map((name) => (
+                <option value="">
+                  {workerSettings?.available
+                    ? "Select cached model"
+                    : runtime
+                      ? "No legacy models found; configure Transcribe"
+                      : "Checking local models..."}
+                </option>
+                {(workerSettings?.available
+                  ? modelSchema.options
+                  : (runtime?.whisper.models ?? [])
+                ).map((name) => (
                   <option key={name}>{name}</option>
                 ))}
               </select>
@@ -315,15 +376,26 @@ export function AIProduction({
                   maxLength={3}
                   className="editor-input ml-2 w-20"
                   value={language}
-                  disabled={running}
+                  disabled={running || workerSettings?.available}
                   onChange={(e) => setLanguage(e.target.value)}
                 />
               </label>
               <button
                 className="editor-secondary"
-                disabled={running || !assetId || !whisperModel || !!transcript}
+                disabled={transcriptionIssues.length > 0}
+                aria-describedby="ai-transcription-start-help"
                 onClick={() => {
                   setMessage("");
+                  if (workerSettings?.available) {
+                    start({
+                      kind: "transcription",
+                      assetId,
+                      model: modelSchema.parse(whisperModel),
+                      device: "cpu",
+                      computeType: "int8",
+                    });
+                    return;
+                  }
                   start({
                     kind: "transcribe",
                     assetId,
@@ -334,6 +406,17 @@ export function AIProduction({
               >
                 Transcribe locally
               </button>
+              <div id="ai-transcription-start-help" role="status">
+                {transcriptionIssues.length ? (
+                  <ul className="list-disc pl-5">
+                    {transcriptionIssues.map((issue) => (
+                      <li key={issue}>{issue}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>Ready to transcribe. The selected model must already be installed locally.</p>
+                )}
+              </div>
               {transcript && (
                 <button
                   className="editor-secondary"

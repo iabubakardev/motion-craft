@@ -206,7 +206,7 @@ app.once("browser-window-created", (_event, window) => {
       });
       window.webContents.debugger.detach();
       await waitFor(
-        `JSON.parse(document.querySelector('textarea[aria-label="Project JSON"]').value).schemaVersion === 3`,
+        `JSON.parse(document.querySelector('textarea[aria-label="Project JSON"]').value).schemaVersion === 4`,
       );
       await click("Validate and review");
       await waitFor(`!!document.querySelector('dialog[aria-label="Review project import"]')`);

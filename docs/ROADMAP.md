@@ -1,6 +1,6 @@
 # MotionCraft roadmap
 
-Current milestone: Phase 7 local AI working slice (worker integrations and reviewed plan-to-timeline flow). Phase 7.1 real Ollama 0.40.14 / qwen3:8b script planning is verified; faster-whisper remains absent. Phase 6 transitions/caption effects remain pending. Follow ENGINEERING_STANDARDS.md before future work. Production desktop packaging/security and representative media validation are recommended next.
+Current milestone: Phase 7 local AI working slice (worker integrations and reviewed plan-to-timeline flow). Phase 7.1 real Ollama 0.40.14 / qwen3:8b script planning is verified; Phase 7.3 Part B external tiny/CPU/int8 transcription is verified. Phase 6 transitions/caption effects remain pending. Follow ENGINEERING_STANDARDS.md before future work. Production desktop packaging/security and representative media validation are recommended next.
 
 - [x] Next.js application created and running (user confirmed)
 - [x] Electron dev window and secure preload IPC verified (automated desktop smoke test)
@@ -23,7 +23,8 @@ Current milestone: Phase 7 local AI working slice (worker integrations and revie
 - [ ] Local backend/persistence and background jobs as needed
 - [x] Local AI contracts, supervised workers, discovery, reviewed external plans, metadata asset ranking and append-to-timeline conversion
 - [x] Phase 7.1 real qwen3:8b structured script planning, editable preview, JSON export and cancellation through secure Electron IPC
-- [ ] Real faster-whisper inference acceptance with installed models and spoken narration (see LOCAL_AI.md)
+- [x] External-worker transcription, edited/persisted review, source seeking and ordinary timeline captions; real tiny/CPU/int8 UI/history/save/cancel verification (see TRANSCRIPTION.md)
+- [ ] Broader transcription video/codec, GPU and long-recording acceptance
 - [ ] Asset semantic search, RAG and controlled agents
 - [ ] Windows packaging, tests, CI/CD and future web investigation
 
