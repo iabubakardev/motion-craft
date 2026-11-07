@@ -1,3 +1,4 @@
+import type { analysisSchema } from "@/core/audio/schema.cjs";
 import type { AIJob, AIRequest } from "./ai";
 import type { RenderJob } from "@/platform/render";
 import type { MediaAsset, MediaImportResult, MediaMetadata } from "@/core/media/types";
@@ -31,6 +32,14 @@ export interface DesktopBridge {
     start: (request: AIRequest) => Promise<AIJob>;
     status: () => Promise<AIJob | null>;
     cancel: (id: string) => Promise<AIJob | null>;
+  };
+  audio: {
+    analyze: (
+      id: string,
+      range?: { start: number; end: number },
+    ) => Promise<z.infer<typeof analysisSchema>>;
+    inspectClip: (project: Project, id: string) => Promise<z.infer<typeof analysisSchema>>;
+    mix: (project: Project) => Promise<{ url: string } | { canceled: true }>;
   };
   render: {
     start: (project: Project) => Promise<RenderJob | null>;

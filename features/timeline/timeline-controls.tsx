@@ -38,7 +38,7 @@ export function ClipBlock({
       aria-pressed={selected}
       aria-haspopup="menu"
       data-clip-id={id}
-      title={`${label}${audio ? " · Audio (waveform not generated)" : ""}`}
+      title={`${label}${audio ? " · Audio (source waveform and automation)" : ""}`}
       onFocus={onFocus}
       onPointerDown={onPointerDown}
       onKeyDown={(e) => {

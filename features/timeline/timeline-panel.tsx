@@ -1,4 +1,5 @@
 "use client";
+import { AudioWaveform } from "@/features/audio/audio-waveform";
 import { useBoxSelection } from "./use-box-selection";
 import { KeyframeMarkers } from "./keyframe-markers";
 import type { ProjectDocumentController } from "@/features/projects/use-project-document";
@@ -30,6 +31,7 @@ interface Props {
   activeSceneId: string | null;
   documentGeneration: number;
   busy: boolean;
+  executeAudio: ProjectDocumentController["executeAudio"];
   executeMotion: ProjectDocumentController["executeMotion"];
   execute: (command: TimelineCommand, expected?: Project) => boolean;
   onScene: (id: string) => void;
@@ -48,6 +50,7 @@ export const TimelinePanel = memo(function TimelinePanel({
   busy,
   execute,
   executeMotion,
+  executeAudio,
   onScene,
   onLayer,
   onAsset,
@@ -75,6 +78,10 @@ export const TimelinePanel = memo(function TimelinePanel({
             : undefined,
         ]),
       ),
+    [assets],
+  );
+  const audioVersions = useMemo(
+    () => new Map(assets.map((a) => [a.id, `${a.size}:${a.importedAt}:${a.status}`])),
     [assets],
   );
   const [showEmptyTracks, setShowEmptyTracks] = useState(false);
@@ -858,6 +865,18 @@ export const TimelinePanel = memo(function TimelinePanel({
                           else if (item.asset) onAsset(item.asset.id);
                         }}
                       >
+                        {track.type === "audio" && item.asset && (
+                          <AudioWaveform
+                            clip={clip}
+                            assetId={item.asset.id}
+                            fingerprint={audioVersions.get(item.asset.id) ?? item.asset.importedAt}
+                            fps={project.fps}
+                            zoom={zoom}
+                            scrollLeft={scrollLeft}
+                            viewportWidth={viewportWidth}
+                            document={{ project, executeAudio, busy }}
+                          />
+                        )}
                         <KeyframeMarkers
                           project={project}
                           clip={clip}

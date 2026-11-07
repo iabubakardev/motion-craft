@@ -37,8 +37,42 @@ process.on("message", async (message) => {
   let directory, media;
   try {
     const request = workerRequestSchema.parse(message);
-    media = await createRenderMediaServer(request.bindings);
-    const input = { project: request.project, sources: media.sources },
+    let audioMix;
+    if (
+      request.audioCache &&
+      request.project.tracks.some(
+        (t) =>
+          t.clips.some((c) => c.audio || c.audioOnly) ||
+          t.gainDb !== undefined ||
+          t.solo ||
+          t.audioOverlap,
+      )
+    ) {
+      const filename = await require("./audio-processing.cjs").mix(
+          request.project,
+          request.bindings,
+          request.audioCache,
+        ),
+        stat = await fs.stat(filename),
+        id = require("node:crypto").randomUUID();
+      const binding =
+        require("../rendering/contracts.cjs").workerRequestSchema.shape.bindings.element.parse({
+          id,
+          originalPath: filename,
+          size: stat.size,
+          modifiedAt: stat.mtimeMs,
+          ino: stat.ino,
+          type: "audio",
+          mimeType: "audio/wav",
+        });
+      media = await createRenderMediaServer([...request.bindings, binding]);
+      audioMix = media.sources[id];
+    } else media = await createRenderMediaServer(request.bindings);
+    const input = {
+        project: request.project,
+        sources: media.sources,
+        ...(audioMix ? { audioMix } : {}),
+      },
       model = buildComposition(input);
     if (model.clips.some((clip) => clip.assetId && !clip.src)) throw new Error("Missing media");
     send({ type: "progress", state: "preparing", progress: 0 });

@@ -124,8 +124,28 @@ function createMediaLibrary() {
     return importResultSchema.parse({ canceled: false, assets, duplicates, errors });
   }
 
+  const derived = new Set();
+  async function registerDerived(filename) {
+    const original = await fs.realpath(filename);
+    if (original !== filename || (await fs.lstat(filename)).isSymbolicLink())
+      throw new Error("Prepared audio identity changed.");
+    const result = await importFiles([filename]);
+    const asset = result.assets[0];
+    if (!asset) throw new Error("Could not register prepared audio.");
+    const record = records.get(asset.id);
+    if (record?.originalPath !== filename) {
+      records.delete(asset.id);
+      throw new Error("Prepared audio identity changed.");
+    }
+    derived.add(asset.id);
+    return asset;
+  }
   function listAssets() {
-    return mediaAssetsSchema.parse([...records.values()].map((record) => record.asset));
+    return mediaAssetsSchema.parse(
+      [...records.values()]
+        .filter((record) => !derived.has(record.asset.id))
+        .map((record) => record.asset),
+    );
   }
 
   function updateMetadata(id, metadata) {
@@ -311,6 +331,7 @@ function createMediaLibrary() {
 
   return {
     importFiles,
+    registerDerived,
     listAssets,
     updateMetadata,
     respond,

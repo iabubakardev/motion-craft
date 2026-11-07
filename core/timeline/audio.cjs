@@ -76,7 +76,12 @@ function executeAudioCommand(p, c, now) {
       ),
     }));
   } else {
-    if (!item.clip.audioOnly && item.asset?.type !== "audio" && item.layer?.type !== "audio")
+    if (
+      !item.clip.audioOnly &&
+      item.asset?.type !== "audio" &&
+      item.asset?.type !== "video" &&
+      item.layer?.type !== "audio"
+    )
       throw new Error("Select an audio clip.");
     if ((c.patch.fadeIn ?? 0) > item.clip.duration || (c.patch.fadeOut ?? 0) > item.clip.duration)
       throw new Error("Fade duration exceeds the clip.");
@@ -87,7 +92,7 @@ function executeAudioCommand(p, c, now) {
     scenes = scenes.map((s) => ({
       ...s,
       layers: s.layers.map((l) =>
-        l.id === item.layer?.id && l.type === "audio"
+        l.id === item.layer?.id && (l.type === "audio" || l.type === "video")
           ? {
               ...l,
               properties: {

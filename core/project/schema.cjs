@@ -203,6 +203,7 @@ const clipSchema = z
     layerId: idSchema.optional(),
     visual: require("../timeline/visual-schema.cjs").visualSchema.optional(),
     playbackRate: z.number().min(0.25).max(4).optional(),
+    audio: require("../audio/schema.cjs").audioSchema.optional(),
     audioOnly: z.boolean().optional(),
     muted: z.boolean().optional(),
     volume: z.number().min(0).max(2).optional(),
@@ -253,6 +254,9 @@ const trackSchema = z
     order: z.number().int().min(0).max(63),
     visible: z.boolean(),
     muted: z.boolean(),
+    gainDb: z.number().min(-60).max(12).optional(),
+    solo: z.boolean().optional(),
+    audioOverlap: z.boolean().optional(),
     locked: z.boolean(),
     height: z.number().int().min(28).max(160),
     clips: z.array(clipSchema).max(10000),
@@ -445,6 +449,8 @@ function validateProjectRelations(project, ctx, version) {
     orders.add(track.order);
     track.clips.forEach((clip, clipIndex) => {
       const location = ["tracks", trackIndex, "clips", clipIndex];
+      if (clip.audio?.keys.some((k) => k.frame >= Math.ceil(clip.duration * project.fps)))
+        issue([...location, "audio", "keys"], "Volume keys must remain inside the clip");
       if (clipIds.has(clip.id)) issue([...location, "id"], "Clip IDs must be unique");
       clipIds.add(clip.id);
       if (clip.trackId !== track.id)

@@ -431,6 +431,7 @@ function Workspace() {
           }
           execute={doc.executeTimeline}
           executeMotion={doc.executeMotion}
+          executeAudio={doc.executeAudio}
           onScene={doc.selectScene}
           onLayer={doc.selectLayer}
           onAsset={doc.selectMedia}

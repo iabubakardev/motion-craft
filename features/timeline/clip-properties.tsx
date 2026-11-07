@@ -33,46 +33,6 @@ export function ClipProperties({ document: doc }: { document: ProjectDocumentCon
           Detach Audio
         </button>
       )}
-      {(clip.audioOnly || item.asset?.type === "audio") && (
-        <fieldset disabled={doc.busy || track.locked} className="mb-3 grid grid-cols-2 gap-2">
-          <label>
-            Muted
-            <input
-              type="checkbox"
-              checked={clip.muted || false}
-              onChange={(e) =>
-                doc.executeTimeline({
-                  type: "UpdateAudio",
-                  clipId: clip.id,
-                  patch: { muted: e.target.checked },
-                })
-              }
-            />
-          </label>
-          {(["volume", "fadeIn", "fadeOut"] as const).map((key) => (
-            <label key={`${clip.id}:${key}:${clip[key]}`}>
-              {key}
-              <input
-                className="editor-input w-full"
-                aria-label={`Audio ${key}`}
-                type="number"
-                min={0}
-                max={key === "volume" ? 2 : clip.duration}
-                step={0.05}
-                defaultValue={clip[key] ?? (key === "volume" ? 1 : 0)}
-                onBlur={(e) =>
-                  doc.executeTimeline({
-                    type: "UpdateAudio",
-                    clipId: clip.id,
-                    patch: { [key]: Number(e.target.value) },
-                  })
-                }
-              />
-            </label>
-          ))}
-        </fieldset>
-      )}
-
       <form
         key={`${clip.id}:${start}:${duration}`}
         className="grid gap-3"

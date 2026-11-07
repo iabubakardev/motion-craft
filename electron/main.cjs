@@ -108,6 +108,7 @@ app
     const mediaLibrary = createMediaLibrary();
     protocol.handle("motioncraft-media", (request) => mediaLibrary.respond(request));
     registerMediaIPC(mediaLibrary);
+    require("./ipc/audio.cjs").registerAudioIPC(mediaLibrary);
     registerProjectIPC(mediaLibrary);
     const renderJobs = registerRenderIPC(mediaLibrary, () => aiJobs.isBusy());
     const aiJobs = registerAIIPC(mediaLibrary, () => renderJobs.isBusy());

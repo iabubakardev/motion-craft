@@ -13,6 +13,11 @@ contextBridge.exposeInMainWorld("motioncraft", {
     status: () => ipcRenderer.invoke("ai:status"),
     cancel: (id) => ipcRenderer.invoke("ai:cancel", id),
   },
+  audio: {
+    analyze: (id, range) => ipcRenderer.invoke("audio:analyze", id, range),
+    inspectClip: (project, id) => ipcRenderer.invoke("audio:inspect-clip", project, id),
+    mix: (project) => ipcRenderer.invoke("audio:mix", project),
+  },
   render: {
     start: (project) => ipcRenderer.invoke("render:start", project),
     status: () => ipcRenderer.invoke("render:status"),

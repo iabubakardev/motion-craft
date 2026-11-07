@@ -1,4 +1,5 @@
 "use client";
+import { executeAudioEdit } from "@/core/audio/commands.cjs";
 import { executeVisualCommand } from "@/core/timeline/visual.cjs";
 import type { commandSchema as motionCommandSchema } from "@/core/animation/commands.cjs";
 import { executeMotionCommand } from "@/core/animation/commands.cjs";
@@ -422,6 +423,12 @@ export function useProjectDocument(library: ReturnType<typeof useMediaLibrary>) 
       }
       return null;
     },
+    executeAudio: (command: unknown, expected?: Project) =>
+      !!mutate((project) => {
+        if (expected && expected !== project)
+          throw new Error("Project changed during the audio edit. Try again.");
+        return executeAudioEdit(project, command);
+      }),
     executeVisual: (command: unknown, expected?: Project) =>
       !!mutate((project) => {
         if (expected && expected !== project)

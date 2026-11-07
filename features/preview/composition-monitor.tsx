@@ -1,4 +1,5 @@
 "use client";
+import { useAudioMix } from "./use-audio-mix";
 import { VisualCanvas } from "./visual-canvas";
 import type { VisualPreview } from "./visual-canvas";
 import type { Caption } from "@/core/captions/presets.cjs";
@@ -27,6 +28,10 @@ export function CompositionMonitor({
   controlsRef: Ref<PreviewMonitorHandle>;
   document: ProjectDocumentController;
 }) {
+  const mix = useAudioMix(
+    project,
+    assets.map((a) => `${a.id}:${a.size}:${a.importedAt}:${a.status}`).join("|"),
+  );
   const [visualPreview, setVisualPreview] = useState<VisualPreview | null>(null);
   const [captionPreview, setCaptionPreview] = useState<{ id: string; box: Caption["box"] } | null>(
     null,
@@ -36,6 +41,8 @@ export function CompositionMonitor({
   const input = useMemo(
     () => ({
       project,
+      ...(mix.url ? { audioMix: mix.url } : {}),
+      ...(mix.needed && !mix.url ? { audioPending: true } : {}),
       sources: Object.fromEntries(
         assets
           .filter(
@@ -45,7 +52,7 @@ export function CompositionMonitor({
           .map((asset) => [asset.id, asset.url]),
       ),
     }),
-    [project, assets],
+    [project, assets, mix.url, mix.needed],
   );
   const model = useMemo(() => buildComposition(input), [input]);
   const { player, connect, toggle } = useTimelinePlayer(model.durationInFrames);
@@ -66,6 +73,12 @@ export function CompositionMonitor({
       className="editor-panel canvas-monitor flex min-h-0 flex-1 flex-col"
     >
       <h2 className="sr-only">Timeline monitor</h2>
+      {mix.needed && !mix.url && (
+        <p role={mix.error ? "alert" : "status"} className="px-3 text-xs text-amber-200">
+          {mix.error ||
+            "Preparing processed audio mix. Audio is silent until preparation completes."}
+        </p>
+      )}
       {model.clips.some((clip) => clip.assetId && !clip.src) && (
         <p role="status" className="px-3 text-[10px] text-amber-200">
           Missing media is shown as placeholders or silent audio. Relink before export.

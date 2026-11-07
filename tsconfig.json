@@ -39,7 +39,10 @@
     "workers/**/*.cjs",
     "electron/render*.cjs",
     "electron/verify-render.cjs",
-    "electron/ipc/render.cjs"
+    "electron/ipc/render.cjs",
+    "core/audio/**/*.cjs",
+    "electron/audio-service.cjs",
+    "electron/ipc/audio.cjs"
   ],
   "exclude": ["node_modules"]
 }

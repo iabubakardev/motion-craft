@@ -92,7 +92,16 @@ function registerRenderIPC(library, otherBusy = () => false) {
         if (obsolete) throw new Error("The originating document was replaced.");
         if (confirmation.response !== 1) return null;
       }
-      return await jobs.start(event.sender.id, { project, output, bindings }, existing);
+      return await jobs.start(
+        event.sender.id,
+        {
+          project,
+          output,
+          bindings,
+          audioCache: path.join(require("electron").app.getPath("userData"), "audio-cache"),
+        },
+        existing,
+      );
     } catch (error) {
       console.error("[render:start]", error instanceof Error ? error.name : "Error");
       throw new Error(

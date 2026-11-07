@@ -29,6 +29,7 @@ const workerRequestSchema = z
   .object({
     project: projectSchema,
     output: z.string().min(1),
+    audioCache: z.string().min(1).optional(),
     bindings: z
       .array(
         z

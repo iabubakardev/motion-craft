@@ -13,7 +13,7 @@ Current milestone: Phase 7 local AI working slice (worker integrations and revie
 - [x] Native local project save/open, trusted media bindings, missing-media relinking and unsaved-change protection
 - [x] Snapshot undo/redo for scene, layer and project settings operations
 - [x] Timeline media drag-and-drop, move/trim/split, selection/copy/paste/delete, snapping, track controls, bounded undo/redo and persistence
-- [ ] Timeline ripple/slip/stretch, cross-scene layer transfer, multi-track group transfer, waveform generation and large-project profiling
+- [ ] Timeline ripple/slip/stretch, cross-scene layer transfer, multi-track group transfer, waveform profiling and large-project profiling
 - [x] Shared Remotion composition, synchronized Player preview, local H.264/AAC MP4 worker, secure media resolver, progress/cancel and verified output
 - [x] Workspace stabilization: default linked canvas, mount-safe Player sync, icon controls, fitted/focused canvas and responsive portrait checks
 - [ ] Direct canvas selection/handles and representative daily-workflow UX review (see WORKSPACE_REVIEW.md)
@@ -36,4 +36,6 @@ Schema v3 and local JSON persistence are implemented, with strict v1/v2 validati
 - [ ] Packaged font/runtime support, physical high-DPI caption gesture validation and measured long-form caption playback profiling.
 
 - [x] Phase 7.5 reference-based audio detachment, selected-range transcription, reviewed transcript reuse, grouping and TXT/SRT/VTT/JSON/CSV exports, verified with a real speech video and synchronized MP4 output (see AUDIO_TRANSCRIPTS.md).
-- [ ] Waveform generation, long-form multilingual/codec/performance acceptance and packaged offline AI/runtime distribution.
+- [ ] Long-form waveform/transcription profiling, multilingual/codec acceptance and packaged offline AI/runtime distribution.
+
+- [x] Phase 7.6 implementation: source waveforms, dB gain/solo/pan, fade handles/curves, volume automation, editable ducking, loudness measurement/gain normalization, basic audio effects and standalone audio crossfades are connected. Core/worker checks and the native waveform/mixing/MP4 acceptance suite pass. See [Audio editing](AUDIO_EDITING.md).

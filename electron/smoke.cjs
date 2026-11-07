@@ -17,7 +17,14 @@ app.on("browser-window-created", (_event, window) => {
       }))()`);
       assert.equal(result.version, app.getVersion());
       assert.equal(result.nodeAvailable, false);
-      assert.deepEqual(result.bridgeKeys, ["getAppVersion", "ai", "render", "media", "projects"]);
+      assert.deepEqual(result.bridgeKeys, [
+        "getAppVersion",
+        "ai",
+        "audio",
+        "render",
+        "media",
+        "projects",
+      ]);
       const prefs = window.webContents.getLastWebPreferences();
       assert.equal(prefs.contextIsolation, true);
       assert.equal(prefs.sandbox, true);

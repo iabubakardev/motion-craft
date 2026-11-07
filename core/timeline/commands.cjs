@@ -198,6 +198,13 @@ function validatePlan(project, plan, index) {
     if (requireClip(index, id).track.locked)
       throw new Error("Unlock the source track before editing its clips.");
   for (const changed of plan.changes) {
+    const previous = index.clips.get(changed.clip.id)?.clip;
+    if (previous && changed.clip.duration !== previous.duration)
+      changed.clip = require("../audio/commands.cjs").cropAudio(
+        previous,
+        changed.clip,
+        project.fps,
+      );
     const { clip, layer, sceneId } = changed;
     const track = index.tracks.get(clip.trackId);
     const asset = project.assets.find(
@@ -242,6 +249,7 @@ function validatePlan(project, plan, index) {
       throw new Error("Still images and graphics do not have media source ranges.");
     for (const other of track.clips)
       if (
+        !(track.type === "audio" && track.audioOverlap) &&
         !removed.has(other.id) &&
         overlaps(clip.start, clip.duration, other.start, other.duration)
       )
@@ -255,6 +263,10 @@ function validatePlan(project, plan, index) {
         second = plan.changes[b].clip;
       if (
         first.trackId === second.trackId &&
+        !(
+          index.tracks.get(first.trackId)?.type === "audio" &&
+          index.tracks.get(first.trackId)?.audioOverlap
+        ) &&
         overlaps(first.start, first.duration, second.start, second.duration)
       )
         throw new Error("The selected clips would overlap on the same track.");
@@ -384,6 +396,7 @@ function planTimelineEdit(project, input, index = createTimelineIndex(project)) 
             ? null
             : old.sourceStart + (at - old.start) * (old.playbackRate ?? 1),
       });
+      right.clip = require("../audio/commands.cjs").cropAudio(old, right.clip, project.fps);
       if (right.layer) right.layer = { ...right.layer, id: command.newClipId };
       if (
         item.layer?.type === "caption" &&

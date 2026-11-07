@@ -169,3 +169,5 @@ Use **Transcribe** to configure a native-selected Python interpreter and externa
 Phase 7.4 adds six editable caption presets, word-level frame animation, subtitle import/export, caption inspector and direct preview manipulation through existing project/history/timeline commands. See [Caption editor](docs/CAPTIONS.md) for workflow, tests and limits. Run `npm run test:captions` against the development server for isolated native UI and encoded-frame acceptance.
 
 Audio detachment, selected-clip transcription, grouping and multi-format transcript export: see [workflow and limitations](docs/AUDIO_TRANSCRIPTS.md). Run `npm run test:audio-transcripts` for the real local speech-video acceptance test.
+
+Audio editing: [controls, processing and verification](docs/AUDIO_EDITING.md). Run `npm run test:audio` for the prepared native mixing acceptance suite to verify the native audio mixing workflow.

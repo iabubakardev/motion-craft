@@ -1,4 +1,5 @@
 "use client";
+import { AudioInspector } from "@/features/audio/audio-inspector";
 import { useState } from "react";
 import { useTimeline } from "@/features/timeline/timeline-store";
 import { createTimelineIndex } from "@/core/timeline/commands.cjs";
@@ -32,9 +33,15 @@ export function PropertiesInspector({
   onSetBackground: (assetId: string) => void;
 }) {
   const ids = useTimeline((s) => s.selectedIds);
+  const mixTrack = useTimeline((s) => s.activeTrackId);
   const record = createTimelineIndex(doc.project).clips.get(
     ids.length === 1 ? ids[0] : (doc.selectedLayerId ?? ""),
   );
+  const audioFocused =
+    record?.clip.audioOnly ||
+    record?.asset?.type === "audio" ||
+    record?.layer?.type === "audio" ||
+    (!record && doc.project.tracks.some((t) => t.id === mixTrack && t.type === "audio"));
   const context = `${doc.project.id}:${ids.join(":")}:${doc.selectedLayerId ?? ""}:${asset?.id ?? ""}`;
   const [choice, setChoice] = useState<{ context: string; tab: string } | null>(null);
   const tab =
@@ -43,7 +50,7 @@ export function PropertiesInspector({
       ? choice.tab
       : record?.layer?.type === "caption"
         ? "Captions"
-        : record || asset
+        : record || asset || doc.project.tracks.some((t) => t.id === mixTrack && t.type === "audio")
           ? "Basic"
           : doc.project.transcripts.length ||
               doc.project.scenes.some((s) => s.layers.some((l) => l.type === "caption"))
@@ -90,6 +97,7 @@ export function PropertiesInspector({
         aria-labelledby="inspector-tab-Basic"
         hidden={tab !== "Basic"}
       >
+        {audioFocused && <AudioInspector document={doc} />}
         {tab !== "Transitions" && <VisualProperties document={doc} />}
         {!record && (
           <div className="p-4 text-xs space-y-3">
@@ -108,6 +116,7 @@ export function PropertiesInspector({
             )}
           </div>
         )}
+        {!audioFocused && <AudioInspector document={doc} />}
         <ClipProperties document={doc} />
         {!record && doc.selectedLayer?.type !== "caption" && <LayerProperties document={doc} />}
         {!record && <SceneProperties document={doc} />}

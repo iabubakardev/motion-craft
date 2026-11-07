@@ -56,20 +56,25 @@ export function ProjectComposition({
       }}
     >
       <AbsoluteFill style={{ backgroundColor: model.background }} />
-      {model.clips.map((clip) => (
-        <Sequence
-          key={clip.id}
-          name={clip.label}
-          from={clip.from}
-          durationInFrames={clip.durationInFrames}
-          premountFor={fps}
-        >
-          <ClipContent
-            clip={visualPreview?.id === clip.id ? { ...clip, visual: visualPreview.visual } : clip}
-            captionPreview={captionPreview}
-          />
-        </Sequence>
-      ))}
+      {input.audioMix && <Html5Audio src={input.audioMix} volume={1} />}
+      {model.clips
+        .filter((clip) => !(clip.type === "audio" && (input.audioMix || input.audioPending)))
+        .map((clip) => (
+          <Sequence
+            key={clip.id}
+            name={clip.label}
+            from={clip.from}
+            durationInFrames={clip.durationInFrames}
+            premountFor={fps}
+          >
+            <ClipContent
+              clip={
+                visualPreview?.id === clip.id ? { ...clip, visual: visualPreview.visual } : clip
+              }
+              captionPreview={captionPreview}
+            />
+          </Sequence>
+        ))}
     </AbsoluteFill>
   );
 }

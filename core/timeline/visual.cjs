@@ -43,6 +43,43 @@ function executeVisualCommand(project, raw) {
             ? {
                 ...a,
                 playbackRate: c.rate,
+                ...(a.fadeIn !== undefined
+                  ? {
+                      fadeIn: Math.min(
+                        durationFrames / p.fps,
+                        (a.fadeIn * (a.playbackRate ?? 1)) / c.rate,
+                      ),
+                    }
+                  : {}),
+                ...(a.fadeOut !== undefined
+                  ? {
+                      fadeOut: Math.min(
+                        durationFrames / p.fps,
+                        (a.fadeOut * (a.playbackRate ?? 1)) / c.rate,
+                      ),
+                    }
+                  : {}),
+                ...(a.audio
+                  ? {
+                      audio: {
+                        ...a.audio,
+                        keys: [
+                          ...new Map(
+                            a.audio.keys.map((k) => {
+                              const frame = Math.max(
+                                0,
+                                Math.min(
+                                  durationFrames - 1,
+                                  Math.round((k.frame * (a.playbackRate ?? 1)) / c.rate),
+                                ),
+                              );
+                              return [frame, { ...k, frame }];
+                            }),
+                          ).values(),
+                        ].sort((a, b) => a.frame - b.frame),
+                      },
+                    }
+                  : {}),
                 duration: durationFrames / p.fps,
                 sourceEnd:
                   a.sourceStart === null ? null : a.sourceStart + (durationFrames / p.fps) * c.rate,

@@ -12,7 +12,12 @@ const sourceSchema = z
     "Media must use an approved asset resolver",
   );
 const renderInputSchema = z
-  .object({ project: projectSchema, sources: z.record(idSchema, sourceSchema) })
+  .object({
+    project: projectSchema,
+    sources: z.record(idSchema, sourceSchema),
+    audioMix: sourceSchema.optional(),
+    audioPending: z.boolean().optional(),
+  })
   .strict();
 /** @param {unknown} value */
 function buildComposition(value) {
@@ -71,6 +76,8 @@ function buildComposition(value) {
               fadeIn: clip.fadeIn || 0,
               fadeOut: clip.fadeOut || 0,
               muted:
+                !!input.audioMix ||
+                !!input.audioPending ||
                 !!clip.muted ||
                 track.muted ||
                 !!(layer && "muted" in layer.properties && layer.properties.muted),
